@@ -1,0 +1,10 @@
+.idea
+
+venv
+__pycache__
+
+datasets/*
+!datasets/.keep
+
+embeddings/*
+!embeddings/.keep
