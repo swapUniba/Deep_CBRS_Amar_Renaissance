@@ -4,3 +4,12 @@ dest: models/
 prediction_dest: predictions/
 ratings: datasets/movielens/train2id.tsv
 model: BasicCBRS
+
+parameters:
+  batch_size: 512
+  epochs: 25
+  optimizer:
+    lr: 0.001
+    beta: 0.9
+  metrics: ['accuracy']
+  loss: binary_crossentropy
