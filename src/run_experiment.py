@@ -18,6 +18,6 @@ if __name__ == '__main__':
 
     epochs = 25
     batch_size = 512
-    dataset = dataset.batch(batch_size=batch_size)
+    dataset = dataset.repeat(epochs).batch(batch_size=batch_size)
     steps_per_epoch = len(generator) // batch_size
     model.fit(dataset, steps_per_epoch=steps_per_epoch, epochs=epochs)
