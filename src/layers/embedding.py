@@ -15,7 +15,6 @@ class UserItemEmbedding(keras.layers.Layer):
         }
 
     def call(self, inputs):
-        print(inputs)
-        u = tf.map_fn(lambda u: self.users_embedding[u], inputs[:, 0])
-        i = tf.map_fn(lambda i: self.items_embedding[i], inputs[:, 1])
+        u = tf.stack([self.users_embedding[u.numpy()] for (u, _) in inputs])
+        i = tf.stack([self.items_embedding[i.numpy()] for (_, i) in inputs])
         return u, i
