@@ -15,14 +15,14 @@ class UserItemGenerator:
 
     def flow(self):
         for u, i, r in zip(self.users, self.items, self.ratings):
-            yield (self.user_embeddings[u], self.item_embeddings[i]), (r,)
+            yield (self.user_embeddings[u], self.item_embeddings[i]), r
 
     def get_dataset(self):
         embedding_size = len(list(self.user_embeddings.values())[0])
         dataset = tf.data.Dataset.from_generator(
             self.flow, output_signature=(
                 tf.TensorSpec(shape=(2, embedding_size), dtype=tf.float32),
-                tf.TensorSpec(shape=(1,), dtype=tf.int64)
+                tf.TensorSpec(shape=(), dtype=tf.int32)
             )
         )
         return dataset
