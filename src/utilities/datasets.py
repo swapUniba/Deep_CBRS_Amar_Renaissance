@@ -10,6 +10,9 @@ class UserItemGenerator:
         self.users, self.items, self.ratings = load_ratings(ratings_filepath)
         self.user_embeddings, self.item_embeddings = load_user_item_embeddings(user_filepath, item_filepath)
 
+    def __len__(self):
+        return len(self.users)
+
     def flow(self):
         for u, i, r in zip(self.users, self.items, self.ratings):
             yield (self.user_embeddings[u], self.item_embeddings[i]), (r,)
