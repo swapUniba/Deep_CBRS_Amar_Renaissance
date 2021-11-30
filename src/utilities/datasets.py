@@ -7,22 +7,30 @@ from tensorflow import keras
 
 
 class UserItemSequence(keras.utils.Sequence):
-    def __init__(self, ratings_filepath, user_filepath, item_filepath, batch_size=512):
+    def __init__(self, ratings_filepath, user_filepath, item_filepath, batch_size=512, shuffle=True):
         self.users, self.items, self.ratings = load_ratings(ratings_filepath)
         self.user_embeddings, self.item_embeddings = load_user_item_embeddings(user_filepath, item_filepath)
         self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.indexes = None
+        self.on_epoch_end()
 
     def __len__(self):
         return len(self.users) // self.batch_size
 
     def __getitem__(self, idx):
         batch_idx = idx * self.batch_size
-        users = self.users[batch_idx:batch_idx + self.batch_size]
-        items = self.items[batch_idx:batch_idx + self.batch_size]
-        ratings = self.ratings[batch_idx:batch_idx + self.batch_size]
+        indexes = self.indexes[batch_idx:batch_idx + self.batch_size]
+        users, items = self.users[indexes], self.items[indexes]
+        ratings = self.ratings[indexes]
         user_embeddings = np.stack([self.user_embeddings[u] for u in users])
         item_embeddings = np.stack([self.item_embeddings[i] for i in items])
         return (user_embeddings, item_embeddings), ratings
+
+    def on_epoch_end(self):
+        self.indexes = np.arange(len(self.users))
+        if self.shuffle:
+            np.random.shuffle(self.indexes)
 
 
 def load_bert_embeddings(filepath):
