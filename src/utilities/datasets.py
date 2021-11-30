@@ -3,29 +3,26 @@ import json
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+from tensorflow import keras
 
 
-class UserItemGenerator:
-    def __init__(self, ratings_filepath, user_filepath, item_filepath):
+class UserItemSequence(keras.utils.Sequence):
+    def __init__(self, ratings_filepath, user_filepath, item_filepath, batch_size=512):
         self.users, self.items, self.ratings = load_ratings(ratings_filepath)
         self.user_embeddings, self.item_embeddings = load_user_item_embeddings(user_filepath, item_filepath)
+        self.batch_size = batch_size
 
     def __len__(self):
-        return len(self.users)
+        return len(self.users) // self.batch_size
 
-    def flow(self):
-        for u, i, r in zip(self.users, self.items, self.ratings):
-            yield (self.user_embeddings[u], self.item_embeddings[i]), r
-
-    def get_dataset(self):
-        embedding_size = len(list(self.user_embeddings.values())[0])
-        dataset = tf.data.Dataset.from_generator(
-            self.flow, output_signature=(
-                tf.TensorSpec(shape=(2, embedding_size), dtype=tf.float32),
-                tf.TensorSpec(shape=(), dtype=tf.int32)
-            )
-        )
-        return dataset
+    def __getitem__(self, idx):
+        batch_idx = idx * self.batch_size
+        users = self.users[batch_idx:batch_idx + self.batch_size]
+        items = self.items[batch_idx:batch_idx + self.batch_size]
+        ratings = self.ratings[batch_idx:batch_idx + self.batch_size]
+        user_embeddings = np.stack([self.user_embeddings[u] for u in users])
+        item_embeddings = np.stack([self.item_embeddings[i] for i in items])
+        return (user_embeddings, item_embeddings), ratings
 
 
 def load_bert_embeddings(filepath):
@@ -65,4 +62,7 @@ def load_ratings(filepath):
             users.append(int(row[0]))
             items.append(int(row[1]))
             ratings.append(int(row[2]))
+    users = np.array(users, dtype=np.int32)
+    items = np.array(items, dtype=np.int32)
+    ratings = np.array(ratings, dtype=np.int32)
     return users, items, ratings

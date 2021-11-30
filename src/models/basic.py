@@ -22,7 +22,7 @@ class BasicCBRS(keras.Model):
         ])
 
     def call(self, inputs):
-        u, i = inputs[:, 0], inputs[:, 1]
+        u, i = inputs
         u = self.unet(u)
         i = self.inet(i)
         x = self.concat([u, i])
