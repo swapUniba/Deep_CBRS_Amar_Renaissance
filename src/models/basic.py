@@ -4,20 +4,24 @@ from tensorflow import keras
 class BasicCBRS(keras.Model):
     def __init__(self):
         super().__init__()
-        self.unet = keras.Sequential([
-            keras.layers.Dense(512, activation='relu'),
-            keras.layers.Dense(256, activation='relu'),
-            keras.layers.Dense(128, activation='relu')
-        ])
-        self.inet = keras.Sequential([
-            keras.layers.Dense(512, activation='relu'),
-            keras.layers.Dense(256, activation='relu'),
-            keras.layers.Dense(128, activation='relu')
-        ])
+        self.unet = self.build_dense_block()
+        self.inet = self.build_dense_block()
         self.concat = keras.layers.Concatenate()
-        self.fc = keras.Sequential([
-            keras.layers.Dense(64, activation='relu'),
-            keras.layers.Dense(64, activation='relu'),
+        self.fc = self.build_dense_classifier()
+
+    @staticmethod
+    def build_dense_block(hsize1=512, hsize2=256, hsize3=128):
+        return keras.Sequential([
+            keras.layers.Dense(hsize1, activation='relu'),
+            keras.layers.Dense(hsize2, activation='relu'),
+            keras.layers.Dense(hsize3, activation='relu')
+        ])
+
+    @staticmethod
+    def build_dense_classifier(hsize1=64, hsize2=64):
+        return keras.Sequential([
+            keras.layers.Dense(hsize1, activation='relu'),
+            keras.layers.Dense(hsize2, activation='relu'),
             keras.layers.Dense(1, activation='sigmoid')
         ])
 
