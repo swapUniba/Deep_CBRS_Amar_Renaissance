@@ -3,14 +3,22 @@ import tensorflow as tf
 from tensorflow import keras
 
 from models.basic import BasicCBRS
-from utilities.datasets import UserItemSequence
+from utilities.datasets import BERTUserItemSequence, GraphUserItemSequence
 
 
 if __name__ == '__main__':
-    dataset = UserItemSequence(
+    """
+    dataset = BERTUserItemSequence(
         'datasets/movielens/train2id.tsv',
         'embeddings/bert/user-lastlayer.json',
         'embeddings/bert/item-lastlayer.json',
+        batch_size=512, shuffle=True
+    )
+    """
+
+    dataset = GraphUserItemSequence(
+        'datasets/movielens/train2id.tsv',
+        'embeddings/user-item-properties/768DistMult.json',
         batch_size=512, shuffle=True
     )
 

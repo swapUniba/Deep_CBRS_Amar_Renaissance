@@ -6,31 +6,61 @@ import tensorflow as tf
 from tensorflow import keras
 
 
-class UserItemSequence(keras.utils.Sequence):
-    def __init__(self, ratings_filepath, user_filepath, item_filepath, batch_size=512, shuffle=True):
-        self.users, self.items, self.ratings = load_ratings(ratings_filepath)
-        self.user_embeddings, self.item_embeddings = load_user_item_embeddings(user_filepath, item_filepath)
+class BaseUserItemSequence(keras.utils.Sequence):
+    def __init__(
+        self,
+        ratings,
+        user_embeddings,
+        item_embeddings,
+        batch_size=512,
+        shuffle=True,
+        seed=42
+    ):
+        super().__init__()
+        self.ratings = ratings
+        self.user_embeddings = user_embeddings
+        self.item_embeddings = item_embeddings
         self.batch_size = batch_size
         self.shuffle = shuffle
+        self.random_state = np.random.RandomState(seed)
         self.indexes = None
         self.on_epoch_end()
 
     def __len__(self):
-        return len(self.users) // self.batch_size
+        return len(self.ratings) // self.batch_size
 
     def __getitem__(self, idx):
         batch_idx = idx * self.batch_size
         indexes = self.indexes[batch_idx:batch_idx + self.batch_size]
-        users, items = self.users[indexes], self.items[indexes]
         ratings = self.ratings[indexes]
-        user_embeddings = np.stack([self.user_embeddings[u] for u in users])
-        item_embeddings = np.stack([self.item_embeddings[i] for i in items])
-        return (user_embeddings, item_embeddings), ratings
+        user_embeddings = np.stack([self.user_embeddings[u] for u in ratings[:, 0]])
+        item_embeddings = np.stack([self.item_embeddings[i] for i in ratings[:, 1]])
+        return (user_embeddings, item_embeddings), ratings[:, 2]
 
     def on_epoch_end(self):
-        self.indexes = np.arange(len(self.users))
+        self.indexes = np.arange(len(self.ratings))
         if self.shuffle:
-            np.random.shuffle(self.indexes)
+            self.random_state.shuffle(self.indexes)
+
+
+class BERTUserItemSequence(BaseUserItemSequence):
+    def __init__(self, ratings_filepath, user_filepath, item_filepath, batch_size=512, shuffle=True, seed=42):
+        ratings = load_ratings(ratings_filepath)
+        user_embeddings, item_embeddings = load_bert_user_item_embeddings(user_filepath, item_filepath)
+        super().__init__(
+            ratings, user_embeddings, item_embeddings,
+            batch_size=batch_size, shuffle=shuffle, seed=seed
+        )
+
+
+class GraphUserItemSequence(BaseUserItemSequence):
+    def __init__(self, ratings_filepath, filepath, batch_size=512, shuffle=True, seed=42):
+        ratings = load_ratings(ratings_filepath)
+        embeddings = load_graph_user_item_embeddings(filepath)
+        super().__init__(
+            ratings, embeddings, embeddings,
+            batch_size=batch_size, shuffle=shuffle, seed=seed
+        )
 
 
 def load_bert_embeddings(filepath):
@@ -44,33 +74,28 @@ def load_graph_embeddings(filepath):
     return embeddings['ent_embeddings']
 
 
-def load_user_item_embeddings(user_filepath, item_filepath, source='bert'):
-    if source == 'bert':
-        user_embeddings, item_embeddings = dict(), dict()
+def load_bert_user_item_embeddings(user_filepath, item_filepath):
+    user_embeddings, item_embeddings = dict(), dict()
+    df_users = load_bert_embeddings(user_filepath)
+    df_items = load_bert_embeddings(item_filepath)
+    for _, user in df_users.iterrows():
+        user_id = user['ID_OpenKE']
+        user_embeddings[user_id] = np.array(user['profile_embedding'], dtype=np.float32)
+    for _, item in df_items.iterrows():
+        item_id = item['ID_OpenKE']
+        item_embeddings[item_id] = np.array(item['embedding'], dtype=np.float32)
+    return user_embeddings, item_embeddings
 
-        df_users = load_bert_embeddings(user_filepath)
-        df_items = load_bert_embeddings(item_filepath)
 
-        for _, user in df_users.iterrows():
-            user_id = user['ID_OpenKE']
-            user_embeddings[user_id] = np.array(user['profile_embedding'], dtype=np.float32)
-        for _, item in df_items.iterrows():
-            item_id = item['ID_OpenKE']
-            item_embeddings[item_id] = np.array(item['embedding'], dtype=np.float32)
-        return user_embeddings, item_embeddings
-
-    raise ValueError("Unknown embbedding source called: {}".format(source))
+def load_graph_user_item_embeddings(filepath):
+    return np.array(load_graph_embeddings(filepath), dtype=np.float32)
 
 
 def load_ratings(filepath):
-    users, items, ratings = [], [], []
+    ratings = []
     with open(filepath) as fp:
         csv_reader = csv.reader(fp, delimiter='\t')
         for row in csv_reader:
-            users.append(int(row[0]))
-            items.append(int(row[1]))
-            ratings.append(int(row[2]))
-    users = np.array(users, dtype=np.int32)
-    items = np.array(items, dtype=np.int32)
+            ratings.append((int(row[0]), int(row[1]), int(row[2])))
     ratings = np.array(ratings, dtype=np.int32)
-    return users, items, ratings
+    return ratings
