@@ -6,26 +6,47 @@ from os.path import join as path_join
 
 import logging
 import keras
+import datasets
+import inspect
 
 PARAMS_PATH = 'config.yaml'
 
 
 class Trainer:
-    def __init__(self, config, logger):
+    def __init__(self, config: EasyDict, logger):
+        """
+        Encapsulates all objects needed and performs the train
+
+        :param config: EasyDict of all parameters
+        :param logger: loggger object
+        """
         self.config = config
         self._retrieve_classes()
         self.logger = logger
         self.dataset = None
 
     def _retrieve_classes(self):
+        """
+        Retrieve object classes from strings
+        """
         self.config.optimizer = getattr(keras.optimizers, config.parameters.optimizer)
         self.config.model_class = getattr(models, self.config.model_name)
+        self.config.dataset_class = getattr(datasets, self.config.dataset.name)
 
     def build_dataset(self):
+        """
+        Builds dataset from configs
+        """
         self.logger.info('Building dataset...')
+        init_parameters = inspect.signature(self.config.dataset_class.__init__).parameters
+        parameters = {k: self.config.dataset[k]
+                      for k in self.config.dataset.keys() & init_parameters.keys()}
+        self.dataset = self.config.dataset_class(**parameters)
 
     def train(self):
-
+        """
+        Trains a model on the given parameters, and saves it
+        """
         print(self.config.user_source)
         print(self.config.item_source)
         print(self.config.dest)
