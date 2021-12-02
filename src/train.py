@@ -1,33 +1,54 @@
-from utilities.utils import read_bert_embeddings, read_ratings, matching_bert_emb_id
-from models.model1 import run_model
+from tensorflow import keras
+import models
 from ruamel.yaml import YAML
 from easydict import EasyDict
+from os.path import join as path_join
 
 import logging
-import sys
+import keras
 
 PARAMS_PATH = 'config.yaml'
 
 
-def train(config):
+class Trainer:
+    def __init__(self, config, logger):
+        self.config = config
+        self._retrieve_classes()
+        self.logger = logger
+        self.dataset = None
 
-    print(config.user_source)
-    print(config.item_source)
-    print(config.dest)
-    print(config.prediction_dest)
+    def _retrieve_classes(self):
+        self.config.optimizer = getattr(keras.optimizers, config.parameters.optimizer)
+        self.config.model_class = getattr(models, self.config.model_name)
 
-    print('Reading BERT embeddings')
-    user_embeddings, item_embeddings = read_bert_embeddings(config.user_source, config.item_source)
-    print('Reading ratings')
-    user, item, rating = read_ratings(config.ratings)
-    print('Matching')
-    X, y, dim_embeddings = matching_bert_emb_id(user, item, rating, user_embeddings, item_embeddings)
+    def build_dataset(self):
+        self.logger.info('Building dataset...')
 
-    print('Running model')
-    model = run_model(X, y, dim_embeddings, epochs=25, batch_size=512)
+    def train(self):
 
-    # creates a HDF5 file 'model.h5'
-    model.save(config.dest + 'model.h5')
+        print(self.config.user_source)
+        print(self.config.item_source)
+        print(self.config.dest)
+        print(self.config.prediction_dest)
+
+        print('Training:')
+        model = self.config.model_class(feature_based=False)
+        optimizer = self.config.optimizer(
+            learning_rate=config.parameters.optimizer.lr,
+            beta_1=config.parameters.optimizer.beta
+        )
+        model.compile(
+            loss=config.parameters.loss,
+            optimizer=optimizer,
+            metrics=config.parameters.metrics
+        )
+        model = model.fit(self.dataset, epochs=config.parameters.lr, workers=config.n_workers)
+
+        # creates a HDF5 file 'model.h5'
+        self.logger.info('Saving model...')
+        save_path = path_join(config.dest, 'model.h5')
+        model.save(save_path)
+        self.logger.info('Succesfully saved in ' + save_path)
 
 
 if __name__ == "__main__":
@@ -38,4 +59,6 @@ if __name__ == "__main__":
         yaml = YAML()
         config = EasyDict(**yaml.load(params_file))
 
-    train(config)
+    trainer = Trainer(config, logger)
+    trainer.build_dataset()
+    trainer.train()

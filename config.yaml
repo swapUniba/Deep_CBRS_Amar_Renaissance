@@ -1,9 +1,10 @@
 user_source: embeddings/bert/user-lastlayer.json
 item_source: embeddings/bert/item-lastlayer.json
-dest: models/
-prediction_dest: predictions/
+dest: models
+prediction_dest: predictions
 ratings: datasets/movielens/train2id.tsv
 model: BasicCBRS
+n_workers: 4
 
 parameters:
   batch_size: 512
