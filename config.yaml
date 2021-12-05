@@ -1,13 +1,17 @@
 user_source:
 item_source:
-dest: models
+dest: exp
+details: just_try
 prediction_dest: predictions
 ratings:
-model: BasicCBRS
 n_workers: 4
 
+model:
+  name: basic.BasicCBRS
+  feature_based: False # For HybridCBRS
+
 dataset:
-  name: HybridUserItemSequence
+  name: BERTUserItemSequence
   ratings_filepath: datasets/movielens/train2id.tsv
   graph_filepath:
   user_filepath: embeddings/bert/user-lastlayer.json
@@ -18,8 +22,9 @@ dataset:
   seed: 42
 
 parameters:
-  epochs: 25
+  epochs: 1
   optimizer:
+    name: Adam
     lr: 0.001
     beta: 0.9
   metrics: ['accuracy']

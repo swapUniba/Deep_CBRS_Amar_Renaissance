@@ -1,36 +1,64 @@
-from tensorflow import keras
-import models
 from ruamel.yaml import YAML
 from easydict import EasyDict
 from os.path import join as path_join
+from time import strftime
 
+from utilities import datasets
+
+import tensorflow as tf
 import logging
-import keras
-import datasets
+import models
 import inspect
+import os
 
 PARAMS_PATH = 'config.yaml'
 
 
 class Trainer:
-    def __init__(self, config: EasyDict, logger):
+    def __init__(self, config: str):
         """
         Encapsulates all objects needed and performs the train
 
-        :param config: EasyDict of all parameters
-        :param logger: loggger object
+        :param config: Path of config file
         """
-        self.config = config
+        with open(PARAMS_PATH, 'r') as params_file:
+            yaml = YAML()
+            config_str = params_file.read()
+            self.config = EasyDict(**yaml.load(config_str))
+
+        self.exp_name = \
+            strftime("%m_%d-%H_%M") + '-' + \
+            self.config.model.name + '-' + \
+            self.config.dataset.name + '-' + \
+            self.config.details
+
+        self.config.dest = path_join(self.config.dest, self.exp_name)
+        os.makedirs(self.config.dest, exist_ok=True)
+        logging.basicConfig(
+            handlers=[
+                logging.FileHandler(path_join(self.config.dest, 'log.txt')),
+                logging.StreamHandler()
+            ],
+            format="%(message)s",
+            level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
+        self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
+
         self._retrieve_classes()
-        self.logger = logger
         self.dataset = None
+        self.parameters = self.config.parameters
 
     def _retrieve_classes(self):
         """
         Retrieve object classes from strings
         """
-        self.config.optimizer = getattr(keras.optimizers, config.parameters.optimizer)
-        self.config.model_class = getattr(models, self.config.model_name)
+        self.config.optimizer_class = getattr(tf.keras.optimizers, self.config.parameters.optimizer.name)
+
+        model_module, model_class = self.config.model.name.split('.')
+        model_package = __import__(models.__name__, fromlist=[model_module])
+        model_module = getattr(model_package, model_module)
+        self.config.model_class = getattr(model_module, model_class)
+
         self.config.dataset_class = getattr(datasets, self.config.dataset.name)
 
     def build_dataset(self):
@@ -43,43 +71,49 @@ class Trainer:
                       for k in self.config.dataset.keys() & init_parameters.keys()}
         self.dataset = self.config.dataset_class(**parameters)
 
+    def build_model(self):
+        """
+        Builds model from config parameters
+        """
+        self.logger.info('Building model...')
+        init_parameters = inspect.signature(self.config.model_class.__init__).parameters
+        parameters = {k: self.config.model[k]
+                      for k in self.config.model.keys() & init_parameters.keys()}
+        self.model = self.config.model_class(**parameters)
+
     def train(self):
         """
         Trains a model on the given parameters, and saves it
         """
-        print(self.config.user_source)
-        print(self.config.item_source)
-        print(self.config.dest)
-        print(self.config.prediction_dest)
 
-        print('Training:')
-        model = self.config.model_class(feature_based=False)
-        optimizer = self.config.optimizer(
-            learning_rate=config.parameters.optimizer.lr,
-            beta_1=config.parameters.optimizer.beta
+        self.logger.info("Experiment folder: " + self.config.dest)
+
+        self.build_dataset()
+        self.build_model()
+
+        self.logger.info('Training:')
+        optimizer = self.config.optimizer_class(
+            learning_rate=self.parameters.optimizer.lr,
+            beta_1=self.parameters.optimizer.beta
         )
-        model.compile(
-            loss=config.parameters.loss,
+        self.model.compile(
+            loss=self.parameters.loss,
             optimizer=optimizer,
-            metrics=config.parameters.metrics
+            metrics=self.parameters.metrics
         )
-        model = model.fit(self.dataset, epochs=config.parameters.lr, workers=config.n_workers)
+        history = self.model.fit(
+            self.dataset,
+            epochs=self.parameters.epochs,
+            workers=self.config.n_workers)
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
-        save_path = path_join(config.dest, 'model.h5')
-        model.save(save_path)
+        save_path = path_join(self.config.dest, 'model.h5')
+        tf.saved_model.save(self.model, save_path)
         self.logger.info('Succesfully saved in ' + save_path)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format="%(message)s", level=logging.INFO)
-    logger = logging.getLogger(__name__)
 
-    with open(PARAMS_PATH, 'r') as params_file:
-        yaml = YAML()
-        config = EasyDict(**yaml.load(params_file))
-
-    trainer = Trainer(config, logger)
-    trainer.build_dataset()
+    trainer = Trainer(PARAMS_PATH)
     trainer.train()
