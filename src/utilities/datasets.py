@@ -226,11 +226,14 @@ def load_train_test_ratings(train_filepath, test_filepath, return_adjacency=Fals
     train_ratings[:, 1] += len(users)
     test_ratings[:, 1] += len(users)
 
-    # Compute the adjacency matrix
+    # Compute the adjacency matrix (actually two, for both positive and negative ratings)
     adj_size = len(users) + len(items)
-    adj_matrix = np.zeros((adj_size, adj_size), dtype=np.int64)
-    adj_matrix[train_ratings[:, 0], train_ratings[:, 1]] = 1
-    adj_matrix += adj_matrix.T
+    pos_idx = train_ratings[:, 2] == 1
+    neg_idx = ~pos_idx
+    adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.int32)
+    adj_matrix[0, train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
+    adj_matrix[1, train_ratings[neg_idx, 0], train_ratings[neg_idx, 1]] = 1
+    adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
 
     return (train_ratings, test_ratings), adj_matrix
 
