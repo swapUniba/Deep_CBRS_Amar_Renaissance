@@ -182,7 +182,7 @@ class UserItemGraph(keras.utils.Sequence):
             ratings = self.ratings[self.indexes[batch_idx:batch_off]]
         else:
             ratings = self.ratings[batch_idx:batch_off]
-        return (ratings[:, 0], ratings[:, 1], self.adj_matrix), ratings[:, 2]
+        return (ratings[:, 0], ratings[:, 1]), ratings[:, 2]
 
     def on_epoch_end(self):
         """
