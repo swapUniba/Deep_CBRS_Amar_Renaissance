@@ -1,27 +1,27 @@
 from tensorflow import keras
 
 
-class BasicCBRS(keras.Model):
-    def __init__(self):
+class BasicRS(keras.Model):
+    def __init__(self, dense_units=(512, 256, 128), fc_units=(64, 64), activation='relu'):
         super().__init__()
-        self.unet = self.build_dense_block()
-        self.inet = self.build_dense_block()
         self.concat = keras.layers.Concatenate()
-        self.fc = self.build_dense_classifier()
+        self.unet = self.build_dense_block(dense_units, activation=activation)
+        self.inet = self.build_dense_block(dense_units, activation=activation)
+        self.fc = self.build_dense_classifier(fc_units, activation=activation)
 
     @staticmethod
-    def build_dense_block(hsize1=512, hsize2=256, hsize3=128):
+    def build_dense_block(dense_units, activation='relu'):
         return keras.Sequential([
-            keras.layers.Dense(hsize1, activation='relu'),
-            keras.layers.Dense(hsize2, activation='relu'),
-            keras.layers.Dense(hsize3, activation='relu')
+            keras.layers.Dense(units, activation=activation)
+            for units in dense_units
         ])
 
     @staticmethod
-    def build_dense_classifier(hsize1=64, hsize2=64):
+    def build_dense_classifier(fc_units, activation='relu'):
         return keras.Sequential([
-            keras.layers.Dense(hsize1, activation='relu'),
-            keras.layers.Dense(hsize2, activation='relu'),
+            keras.layers.Dense(units, activation=activation)
+            for units in fc_units
+        ] + [
             keras.layers.Dense(1, activation='sigmoid')
         ])
 
