@@ -7,11 +7,11 @@ ratings:
 n_workers: 4
 
 model:
-  name: basic.BasicCBRS
+  name: basic.BasicRS
   feature_based: False # For HybridCBRS
 
 dataset:
-  name: BERTUserItemSequence
+  name: UserItemEmbeddings
   ratings_filepath: datasets/movielens/train2id.tsv
   graph_filepath:
   user_filepath: embeddings/bert/user-lastlayer.json

@@ -42,6 +42,7 @@ class Trainer:
             format="%(message)s",
             level=logging.INFO)
         self.logger = logging.getLogger(__name__)
+        self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.config.dest, histogram_freq=1)
         self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
 
         self._retrieve_classes()
@@ -104,7 +105,8 @@ class Trainer:
         history = self.model.fit(
             self.dataset,
             epochs=self.parameters.epochs,
-            workers=self.config.n_workers)
+            workers=self.config.n_workers,
+            callbacks=[self.tensorboard])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
