@@ -1,34 +1,24 @@
 from tensorflow import keras
 
+from models.dense import build_dense_network, build_dense_classifier
+
 
 class BasicRS(keras.Model):
-    def __init__(self, dense_units=(512, 256, 128), fc_units=(64, 64), activation='relu'):
+    def __init__(
+        self,
+        dense_units=(512, 256, 128),
+        clf_units=(64, 64),
+        activation='relu'
+    ):
         super().__init__()
         self.concat = keras.layers.Concatenate()
-        self.unet = self.build_dense_block(dense_units, activation=activation)
-        self.inet = self.build_dense_block(dense_units, activation=activation)
-        self.fc = self.build_dense_classifier(fc_units, activation=activation)
-
-    @staticmethod
-    def build_dense_block(dense_units, activation='relu'):
-        return keras.Sequential([
-            keras.layers.Dense(units, activation=activation)
-            for units in dense_units
-        ])
-
-    @staticmethod
-    def build_dense_classifier(fc_units, activation='relu'):
-        return keras.Sequential([
-            keras.layers.Dense(units, activation=activation)
-            for units in fc_units
-        ] + [
-            keras.layers.Dense(1, activation='sigmoid')
-        ])
+        self.unet = build_dense_network(dense_units, activation=activation)
+        self.inet = build_dense_network(dense_units, activation=activation)
+        self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
     def call(self, inputs):
         u, i = inputs
         u = self.unet(u)
         i = self.inet(i)
         x = self.concat([u, i])
-        y = self.fc(x)
-        return y
+        return self.clf(x)

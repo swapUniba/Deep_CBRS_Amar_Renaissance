@@ -1,46 +1,38 @@
 from tensorflow import keras
 
+from models.dense import build_dense_network, build_dense_classifier
+
 
 class HybridCBRS(keras.Model):
-    def __init__(self, feature_based=False):
+    def __init__(
+        self,
+        feature_based=False,
+        dense_units=((512, 256, 128), (64, 64)),
+        clf_units=(64, 64),
+        activation='relu'
+    ):
         super().__init__()
         self.feature_based = feature_based
-        self.dense1a = self.build_dense_block()
-        self.dense1b = self.build_dense_block()
-        self.dense2a = self.build_dense_block()
-        self.dense2b = self.build_dense_block()
         self.concat = keras.layers.Concatenate()
-        self.dense3a = self.build_dense_block(64, 32)
-        self.dense3b = self.build_dense_block(64, 32)
-        self.fc = self.build_dense_classifier()
-
-    @staticmethod
-    def build_dense_block(hsize1=256, hsize2=64):
-        return keras.Sequential([
-            keras.layers.Dense(hsize1, activation='relu'),
-            keras.layers.Dense(hsize2, activation='relu')
-        ])
-
-    @staticmethod
-    def build_dense_classifier(hsize1=32, hsize2=8):
-        return keras.Sequential([
-            keras.layers.Dense(hsize1, activation='relu'),
-            keras.layers.Dense(hsize2, activation='relu'),
-            keras.layers.Dense(1, activation='sigmoid')
-        ])
+        self.dense1a = build_dense_network(dense_units[0], activation=activation)
+        self.dense1b = build_dense_network(dense_units[0], activation=activation)
+        self.dense2a = build_dense_network(dense_units[0], activation=activation)
+        self.dense2b = build_dense_network(dense_units[0], activation=activation)
+        self.dense3a = build_dense_network(dense_units[1], activation=activation)
+        self.dense3b = build_dense_network(dense_units[1], activation=activation)
+        self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
     def call(self, inputs):
         ug, ig, ub, ib = inputs
-        ugvec = self.dense1a(ug)
-        igvec = self.dense1b(ig)
-        ubvec = self.dense2a(ub)
-        ibvec = self.dense2b(ib)
+        ug = self.dense1a(ug)
+        ig = self.dense1b(ig)
+        ub = self.dense2a(ub)
+        ib = self.dense2b(ib)
 
         if self.feature_based:
-            uigvec = self.dense3a(self.concat([ugvec, igvec]))
-            uibvec = self.dense3b(self.concat([ubvec, ibvec]))
-            return self.fc(self.concat([uigvec, uibvec]))
+            x1 = self.dense3a(self.concat([ug, ig]))
+            x2 = self.dense3b(self.concat([ub, ib]))
         else:
-            uvec = self.dense3a(self.concat([ugvec, ubvec]))
-            ivec = self.dense3b(self.concat([igvec, ibvec]))
-            return self.fc(self.concat([uvec, ivec]))
+            x1 = self.dense3a(self.concat([ug, ub]))
+            x2 = self.dense3b(self.concat([ig, ib]))
+        return self.clf(self.concat([x1, x2]))
