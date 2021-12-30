@@ -195,19 +195,29 @@ class UserItemGraph(keras.utils.Sequence):
             self.random_state.shuffle(self.indexes)
 
 
-def load_train_test_ratings(train_filepath, test_filepath, return_adjacency=False):
+def load_train_test_ratings(
+    train_filepath,
+    test_filepath,
+    sep='\t',
+    return_adjacency=False,
+    binary_adjacency=True
+):
     """
     Load train and test ratings. Note that the user and item IDs are converted to sequential numbers.
 
-    :param train_filepath: The training ratings CSV filepath.
-    :param test_filepath: The test ratings CSV filepath.
+    :param train_filepath: The training ratings CSV or TSV filepath.
+    :param test_filepath: The test ratings CSV or TSV filepath.
+    :param sep: The separator to use for CSV or TSV files.
+    :param return_adjacency: Whether to also return the adjacency matrix.
+    :param binary_adjacency: Used only if return_adjacency is True. Whether to consider both positive and negative
+                             ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
              Moreover, it returns the users and items original unique IDs if return_adjacency is False,
              otherwise it returns the training interactions adjacency matrix (assuming un-directed arcs).
     """
     # Load the ratings arrays
-    train_ratings = pd.read_csv(train_filepath).to_numpy()
-    test_ratings = pd.read_csv(test_filepath).to_numpy()
+    train_ratings = pd.read_csv(train_filepath, sep=sep).to_numpy()
+    test_ratings = pd.read_csv(test_filepath, sep=sep).to_numpy()
 
     # Convert users and items ids to indices (i.e. sequential)
     users, users_indexes = np.unique(train_ratings[:, 0], return_inverse=True)
@@ -226,14 +236,20 @@ def load_train_test_ratings(train_filepath, test_filepath, return_adjacency=Fals
     train_ratings[:, 1] += len(users)
     test_ratings[:, 1] += len(users)
 
-    # Compute the adjacency matrix (actually two, for both positive and negative ratings)
+    # Compute the dimensions of the adjacency matrix
     adj_size = len(users) + len(items)
+
+    # Compute the adjacency matrix
     pos_idx = train_ratings[:, 2] == 1
-    neg_idx = ~pos_idx
-    adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.int32)
-    adj_matrix[0, train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
-    adj_matrix[1, train_ratings[neg_idx, 0], train_ratings[neg_idx, 1]] = 1
-    adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
+    if binary_adjacency:
+        adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.int32)
+        adj_matrix[0, train_ratings[ pos_idx, 0], train_ratings[ pos_idx, 1]] = 1
+        adj_matrix[1, train_ratings[~pos_idx, 0], train_ratings[~pos_idx, 1]] = 1
+        adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
+    else:
+        adj_matrix = np.zeros([adj_size, adj_size], dtype=np.int32)
+        adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
+        adj_matrix += np.transpose(adj_matrix, axes=[1, 0])
 
     return (train_ratings, test_ratings), adj_matrix
 
