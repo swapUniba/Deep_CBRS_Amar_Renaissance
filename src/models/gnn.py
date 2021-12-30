@@ -31,7 +31,8 @@ class BasicGCN(keras.models.Model):
         adj_matrix,
         embedding_dim=64,
         n_hiddens=(64, 64),
-        dropout=0.2,
+        dropout=None,
+        l2_regularizer=1e-4,
         dense_units=(192, 64),
         clf_units=(64, 64),
         activation='relu'
@@ -43,6 +44,7 @@ class BasicGCN(keras.models.Model):
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
+        :param l2_regularizer: L2 regularization constant to apply on embeddings and GCN layers' weights.
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
@@ -51,7 +53,9 @@ class BasicGCN(keras.models.Model):
 
         # Initialize the nodes embedding weights
         self.embeddings = self.add_weight(
-            shape=(len(adj_matrix), embedding_dim), initializer='glorot_uniform'
+            shape=(len(adj_matrix), embedding_dim),
+            initializer='glorot_uniform',
+            regularizer=keras.regularizers.l2(l2_regularizer)
         )
 
         # Normalize and initialize the adjacency matrix constant parameter
@@ -61,7 +65,12 @@ class BasicGCN(keras.models.Model):
 
         # Build GCN layers
         self.gcn_layers = [
-            GCNConv(n_hidden, activation='relu')  # Or we should just follow LightGCN ?
+            GCNConv(
+                n_hidden,
+                activation='relu',  # Or we should just follow LightGCN and set this to None ?
+                kernel_regularizer=keras.regularizers.l2(l2_regularizer),
+                bias_regularizer=keras.regularizers.l2(l2_regularizer)
+            )  
             for n_hidden in n_hiddens
         ]
 
