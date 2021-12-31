@@ -25,8 +25,12 @@ if __name__ == '__main__':
     )
 
     # Instantiate, train and evaluate a hybrid feature-based recommender system
-    model = BasicGCN(data_train.adj_matrix)
-    optimizer = keras.optimizers.Adam(learning_rate=1e-3, beta_1=0.9)
+    model = BasicGCN(
+        data_train.adj_matrix,
+        embedding_dim=16, n_hiddens=(16, 16, 16), l2_regularizer=1e-4,
+        dense_units=(64, 32), clf_units=(32, 32)
+    )
+    optimizer = keras.optimizers.Adam(learning_rate=1e-3)
     model.compile(loss='binary_crossentropy', optimizer=optimizer, metrics=['accuracy'])
     model.fit(data_train, epochs=25)
     model.evaluate(data_test)
