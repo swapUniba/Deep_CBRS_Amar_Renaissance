@@ -1,5 +1,6 @@
 import numpy as np
 import tensorflow as tf
+from scipy import sparse
 from tensorflow import keras
 
 from spektral.utils.convolution import gcn_filter
@@ -29,18 +30,18 @@ class BasicGCN(keras.models.Model):
     def __init__(
         self,
         adj_matrix,
-        embedding_dim=64,
-        n_hiddens=(64, 64),
+        embedding_dim=8,
+        n_hiddens=(8, 8, 8),
         dropout=None,
-        l2_regularizer=1e-4,
-        dense_units=(192, 64),
-        clf_units=(64, 64),
+        l2_regularizer=1e-5,
+        dense_units=(32, 16),
+        clf_units=(16, 16),
         activation='relu'
     ):
         """
         Initialize a Basic recommender system based on Graph Convolutional Networks (GCN).
 
-        :param adj_matrix: The graph adjency matrix.
+        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
@@ -53,15 +54,23 @@ class BasicGCN(keras.models.Model):
 
         # Initialize the nodes embedding weights
         self.embeddings = self.add_weight(
-            shape=(len(adj_matrix), embedding_dim),
+            shape=(adj_matrix.shape[0], embedding_dim),
             initializer='glorot_uniform',
             regularizer=keras.regularizers.l2(l2_regularizer)
         )
 
-        # Normalize and initialize the adjacency matrix constant parameter
+        # Initialize the adjacency matrix constant parameter
         # Note normalizing the adjency matrix using the GCN filter
-        norm_adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
-        self.adj_matrix = tf.Variable(tf.convert_to_tensor(norm_adj_matrix), trainable=False)
+        adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
+        if sparse.issparse(adj_matrix):
+            adj_matrix = adj_matrix.tocoo()
+            self.adj_matrix = tf.sparse.reorder(tf.sparse.SparseTensor(
+                indices=np.mat([adj_matrix.row, adj_matrix.col]).T,
+                values=adj_matrix.data,
+                dense_shape=adj_matrix.shape
+            ))
+        else:
+            self.adj_matrix = tf.convert_to_tensor(adj_matrix)
 
         # Build GCN layers
         self.gcn_layers = [

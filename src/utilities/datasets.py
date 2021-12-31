@@ -2,6 +2,7 @@ import csv
 import json
 import numpy as np
 import pandas as pd
+from scipy import sparse
 from tensorflow import keras
 
 
@@ -200,7 +201,8 @@ def load_train_test_ratings(
     test_filepath,
     sep='\t',
     return_adjacency=False,
-    binary_adjacency=True
+    binary_adjacency=False,
+    sparse_adjacency=True
 ):
     """
     Load train and test ratings. Note that the user and item IDs are converted to sequential numbers.
@@ -211,6 +213,8 @@ def load_train_test_ratings(
     :param return_adjacency: Whether to also return the adjacency matrix.
     :param binary_adjacency: Used only if return_adjacency is True. Whether to consider both positive and negative
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
+    :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
+                             matrix instead of dense.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
              Moreover, it returns the users and items original unique IDs if return_adjacency is False,
              otherwise it returns the training interactions adjacency matrix (assuming un-directed arcs).
@@ -247,9 +251,16 @@ def load_train_test_ratings(
         adj_matrix[1, train_ratings[~pos_idx, 0], train_ratings[~pos_idx, 1]] = 1
         adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
     else:
-        adj_matrix = np.zeros([adj_size, adj_size], dtype=np.int32)
-        adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
-        adj_matrix += np.transpose(adj_matrix, axes=[1, 0])
+        if sparse_adjacency:
+            adj_matrix = sparse.coo_matrix(
+                (train_ratings[pos_idx, 2], (train_ratings[pos_idx, 0], train_ratings[pos_idx, 1])),
+                shape=[adj_size, adj_size], dtype=np.int32
+            )
+            adj_matrix += adj_matrix.T
+        else:
+            adj_matrix = np.zeros([adj_size, adj_size], dtype=np.int32)
+            adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
+            adj_matrix += np.transpose(adj_matrix, axes=[1, 0])
 
     return (train_ratings, test_ratings), adj_matrix
 
