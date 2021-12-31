@@ -33,7 +33,7 @@ class BasicGCN(keras.models.Model):
         embedding_dim=8,
         n_hiddens=(8, 8, 8),
         dropout=None,
-        l2_regularizer=1e-5,
+        l2_regularizer=None,
         dense_units=(32, 16),
         clf_units=(16, 16),
         activation='relu'
@@ -45,18 +45,24 @@ class BasicGCN(keras.models.Model):
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
-        :param l2_regularizer: L2 regularization constant to apply on embeddings and GCN layers' weights.
+        :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
         """
         super().__init__()
 
+        # Initialize the L2 regularizer, if specified
+        if l2_regularizer is not None:
+            regularizer = keras.regularizers.l2(l2_regularizer)
+        else:
+            regularizer = None
+
         # Initialize the nodes embedding weights
         self.embeddings = self.add_weight(
             shape=(adj_matrix.shape[0], embedding_dim),
             initializer='glorot_uniform',
-            regularizer=keras.regularizers.l2(l2_regularizer)
+            regularizer=regularizer
         )
 
         # Initialize the adjacency matrix constant parameter
@@ -77,8 +83,8 @@ class BasicGCN(keras.models.Model):
             GCNConv(
                 n_hidden,
                 activation='relu',  # Or we should just follow LightGCN and set this to None ?
-                kernel_regularizer=keras.regularizers.l2(l2_regularizer),
-                bias_regularizer=keras.regularizers.l2(l2_regularizer)
+                kernel_regularizer=regularizer,
+                bias_regularizer=regularizer
             )  
             for n_hidden in n_hiddens
         ]
