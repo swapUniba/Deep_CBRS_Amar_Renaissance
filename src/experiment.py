@@ -4,7 +4,9 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities import data
+from utilities.utils import LogCallback
 from models.gnn import BasicGNN
+from keras.callbacks import CSVLogger
 
 import tensorflow as tf
 import numpy as np
@@ -18,6 +20,7 @@ import os
 from utilities.metrics import top_k_metrics
 
 PARAMS_PATH = 'config.yaml'
+LOG_FREQUENCY = 10
 
 
 class Experimenter:
@@ -40,18 +43,25 @@ class Experimenter:
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
         os.makedirs(self.config.dest, exist_ok=True)
+
+        # Logging stuff
+        file_handler = logging.FileHandler(path_join(self.config.dest, 'log.txt'))
         logging.basicConfig(
             handlers=[
-                logging.FileHandler(path_join(self.config.dest, 'log.txt')),
-                logging.StreamHandler()
+                file_handler,
             ],
-            format="%(message)s",
+            format="%(asctime)s %(message)s",
+            datefmt='[%H:%M:%S]',
             level=logging.INFO)
         self.logger = logging.getLogger(__name__)
-        self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.config.dest, histogram_freq=1)
+        self.logger.addHandler(logging.StreamHandler())
+        self.callback_logger = logging.getLogger('callback')
+        self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
+
+        # Tensorboard
+        self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.config.dest, histogram_freq=LOG_FREQUENCY)
         self.board_writer = tf.summary.create_file_writer(self.config.dest + "/metrics")
         self.board_writer.set_as_default()
-        self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
 
         self._retrieve_classes()
         self.trainset = None
@@ -121,7 +131,7 @@ class Experimenter:
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[self.tensorboard])
+            callbacks=[self.tensorboard, LogCallback(self.callback_logger, LOG_FREQUENCY)])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
@@ -144,7 +154,7 @@ class Experimenter:
             (precision_at[k], recall_at[k], f1_at[k]) = top_k_metrics(self.testset.ratings, ratings_pred, k=k)
 
         metrics = pd.DataFrame([precision_at, recall_at, f1_at], index=['precision_at', 'recall_at', 'f1_at'])
-        self.logger.info(metrics)
+        self.logger.info('\n' + str(metrics))
         with self.board_writer.as_default():
             for k in ks:
                 tf.summary.scalar('precision_at', precision_at[k], step=k)
