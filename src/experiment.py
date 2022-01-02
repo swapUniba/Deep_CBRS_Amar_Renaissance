@@ -1,4 +1,3 @@
-import keras
 from ruamel.yaml import YAML
 from easydict import EasyDict
 from os.path import join as path_join
@@ -9,6 +8,7 @@ from models.gnn import BasicGNN
 
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 
 import logging
 import models
@@ -49,6 +49,8 @@ class Experimenter:
             level=logging.INFO)
         self.logger = logging.getLogger(__name__)
         self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.config.dest, histogram_freq=1)
+        self.board_writer = tf.summary.create_file_writer(self.config.dest + "/metrics")
+        self.board_writer.set_as_default()
         self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
 
         self._retrieve_classes()
@@ -136,9 +138,18 @@ class Experimenter:
         # Compute Precision, Recall and F1 @K metrics
         predictions = self.model.predict(self.testset)
         ratings_pred = np.concatenate([self.testset.ratings[:, [0, 1]], predictions], axis=1)
-        self.logger.info('P@ 5, R@ 5, F@ 5: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=5)))
-        self.logger.info('P@10, R@10, F@10: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=10)))
-        self.logger.info('P@20, R@20, F@20: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=20)))
+        precision_at, recall_at, f1_at = {}, {}, {}
+        ks = [5, 10, 20]
+        for k in ks:
+            (precision_at[k], recall_at[k], f1_at[k]) = top_k_metrics(self.testset.ratings, ratings_pred, k=k)
+
+        metrics = pd.DataFrame([precision_at, recall_at, f1_at], index=['precision_at', 'recall_at', 'f1_at'])
+        self.logger.info(metrics)
+        with self.board_writer.as_default():
+            for k in ks:
+                tf.summary.scalar('precision_at', precision_at[k], step=k)
+                tf.summary.scalar('recall_at', recall_at[k], step=k)
+                tf.summary.scalar('f1_at', f1_at[k], step=k)
 
     def run(self):
         """
