@@ -9,29 +9,11 @@ from spektral.layers import GATConv, GCNConv
 from models.basic import BasicRS
 
 
-class BasicGAT(keras.models.Model):
-    def __init__(self, n_hiddens: iter, dropouts):
-        """
-        :param n_hiddens: list of number of hidden units. For each one a GAT layer will be stacked
-        :param dropouts: list of dropouts value. Must match the length of n_hiddens
-        """
-        super().__init__()
-        self.gat_stack = keras.models.Sequential([
-            GATConv(n_hidden, dropout_rate=dropout)
-            for n_hidden, dropout in zip(n_hiddens, dropouts)
-        ])
-
-    def call(self, inputs):
-        out = self.gat_stack(inputs)
-        return out
-
-
-class BasicGCN(keras.models.Model):
+class BasicGNN(keras.models.Model):
     def __init__(
         self,
         adj_matrix,
         embedding_dim=8,
-        n_hiddens=(8, 8, 8),
         dropout=None,
         l2_regularizer=None,
         dense_units=(32, 16),
@@ -39,11 +21,10 @@ class BasicGCN(keras.models.Model):
         activation='relu'
     ):
         """
-        Initialize a Basic recommender system based on Graph Convolutional Networks (GCN).
+        Initialize a Basic recommender system based on Graph Neural Networks (GCN).
 
         :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
         :param embedding_dim: The dimension of latent features representations of user and items.
-        :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
         :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
         :param dense_units: Dense networks units for the Basic recommender system.
@@ -54,19 +35,19 @@ class BasicGCN(keras.models.Model):
 
         # Initialize the L2 regularizer, if specified
         if l2_regularizer is not None:
-            regularizer = keras.regularizers.l2(l2_regularizer)
+            self.regularizer = keras.regularizers.l2(l2_regularizer)
         else:
-            regularizer = None
+            self.regularizer = None
 
         # Initialize the nodes embedding weights
         self.embeddings = self.add_weight(
             shape=(adj_matrix.shape[0], embedding_dim),
             initializer='glorot_uniform',
-            regularizer=regularizer
+            regularizer=self.regularizer
         )
 
         # Initialize the adjacency matrix constant parameter
-        # Note normalizing the adjency matrix using the GCN filter
+        # Note normalizing the adjacency matrix using the GCN filter
         adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
         if sparse.issparse(adj_matrix):
             adj_matrix = adj_matrix.tocoo()
@@ -77,17 +58,6 @@ class BasicGCN(keras.models.Model):
             ))
         else:
             self.adj_matrix = tf.convert_to_tensor(adj_matrix)
-
-        # Build GCN layers
-        self.gcn_layers = [
-            GCNConv(
-                n_hidden,
-                activation='relu',  # Or we should just follow LightGCN and set this to None ?
-                kernel_regularizer=regularizer,
-                bias_regularizer=regularizer
-            )  
-            for n_hidden in n_hiddens
-        ]
 
         # Build the dropout layer
         if dropout is not None:
@@ -103,7 +73,7 @@ class BasicGCN(keras.models.Model):
         # Compute the hidden states given by each GCN layer
         x = self.embeddings
         hs = [x]
-        for gcn in self.gcn_layers:
+        for gcn in self.gnn_layers:
             x = gcn([x, self.adj_matrix])
             if self.dropout is not None:
                 x = self.dropout(x)
@@ -117,3 +87,61 @@ class BasicGCN(keras.models.Model):
         u = tf.nn.embedding_lookup(x, u)
         i = tf.nn.embedding_lookup(x, i)
         return self.rc((u, i))
+
+
+class BasicGCN(BasicGNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_hiddens=(8, 8, 8),
+            **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on Graph Convolutional Networks (GCN).
+
+        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
+        """
+        super().__init__(
+            adj_matrix,
+            **kwargs)
+
+        # Build GCN layers
+        self.gnn_layers = [
+            GCNConv(
+                n_hidden,
+                activation='relu',  # Or we should just follow LightGCN and set this to None ?
+                kernel_regularizer=self.regularizer,
+                bias_regularizer=self.regularizer
+            )
+            for n_hidden in n_hiddens
+        ]
+
+
+class BasicGAT(BasicGNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_hiddens=(8, 8, 8),
+            **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on Graph Attention Networks (GAT).
+
+        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GAT layer.
+        """
+        super().__init__(
+            adj_matrix,
+            **kwargs)
+
+        # Build GAT layers
+        self.gnn_layers = [
+            GATConv(
+                n_hidden,
+                activation='relu',  # Or we should just follow LightGCN and set this to None ?
+                kernel_regularizer=self.regularizer,
+                bias_regularizer=self.regularizer
+            )
+            for n_hidden in n_hiddens
+        ]
