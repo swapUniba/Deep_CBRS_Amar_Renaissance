@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from scipy import sparse
-from tensorflow import keras
+from tensorflow.keras import models, layers, regularizers
 
 from spektral.utils.convolution import gcn_filter
 from spektral.layers import GATConv, GCNConv
@@ -9,7 +9,7 @@ from spektral.layers import GATConv, GCNConv
 from models.basic import BasicRS
 
 
-class BasicGNN(keras.models.Model):
+class BasicGNN(models.Model):
     def __init__(
         self,
         adj_matrix,
@@ -35,12 +35,13 @@ class BasicGNN(keras.models.Model):
 
         # Initialize the L2 regularizer, if specified
         if l2_regularizer is not None:
-            self.regularizer = keras.regularizers.l2(l2_regularizer)
+            self.regularizer = regularizers.l2(l2_regularizer)
         else:
             self.regularizer = None
 
         # Initialize the nodes embedding weights
         self.embeddings = self.add_weight(
+            name='embeddings',
             shape=(adj_matrix.shape[0], embedding_dim),
             initializer='glorot_uniform',
             regularizer=self.regularizer
@@ -61,20 +62,20 @@ class BasicGNN(keras.models.Model):
 
         # Build the dropout layer
         if dropout is not None:
-            self.dropout = keras.layers.Dropout(dropout)
+            self.dropout = layers.Dropout(dropout)
         else:
             self.dropout = None
 
         # Build the concat layer and the Basic recommender system
-        self.concat = keras.layers.Concatenate()
-        self.rc = BasicRS(dense_units, clf_units, activation=activation)
+        self.concat = layers.Concatenate()
+        self.rs = BasicRS(dense_units, clf_units, activation=activation)
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         # Compute the hidden states given by each GCN layer
         x = self.embeddings
         hs = [x]
-        for gcn in self.gnn_layers:
-            x = gcn([x, self.adj_matrix])
+        for gnn in self.gnn_layers:
+            x = gnn([x, self.adj_matrix])
             if self.dropout is not None:
                 x = self.dropout(x)
             hs.append(x)
@@ -86,7 +87,7 @@ class BasicGNN(keras.models.Model):
         u, i = inputs
         u = tf.nn.embedding_lookup(x, u)
         i = tf.nn.embedding_lookup(x, i)
-        return self.rc((u, i))
+        return self.rs([u, i])
 
 
 class BasicGCN(BasicGNN):

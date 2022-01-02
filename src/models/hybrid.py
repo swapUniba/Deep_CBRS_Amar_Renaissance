@@ -1,9 +1,9 @@
-from tensorflow import keras
+from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 
 
-class HybridCBRS(keras.Model):
+class HybridCBRS(models.Model):
     def __init__(
         self,
         feature_based=False,
@@ -13,7 +13,7 @@ class HybridCBRS(keras.Model):
     ):
         super().__init__()
         self.feature_based = feature_based
-        self.concat = keras.layers.Concatenate()
+        self.concat = layers.Concatenate()
         self.dense1a = build_dense_network(dense_units[0], activation=activation)
         self.dense1b = build_dense_network(dense_units[0], activation=activation)
         self.dense2a = build_dense_network(dense_units[0], activation=activation)
@@ -22,7 +22,7 @@ class HybridCBRS(keras.Model):
         self.dense3b = build_dense_network(dense_units[1], activation=activation)
         self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
-    def call(self, inputs):
+    def call(self, inputs, **kwargs):
         ug, ig, ub, ib = inputs
         ug = self.dense1a(ug)
         ig = self.dense1b(ig)

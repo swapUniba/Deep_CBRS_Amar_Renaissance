@@ -1,3 +1,4 @@
+import keras
 from ruamel.yaml import YAML
 from easydict import EasyDict
 from os.path import join as path_join
@@ -123,7 +124,7 @@ class Experimenter:
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
         save_path = path_join(self.config.dest, 'model.h5')
-        # tf.saved_model.save(self.model, save_path) # <-----------------------------------  ECCOLO QUA LO STRONZO INFAME CHE NON FUNZIONA
+        self.model.save_weights(save_path)
         self.logger.info('Succesfully saved in ' + save_path)
 
     def evaluate(self):
