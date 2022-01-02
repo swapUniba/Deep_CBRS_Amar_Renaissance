@@ -3,25 +3,30 @@ from easydict import EasyDict
 from os.path import join as path_join
 from time import strftime
 
-from utilities import datasets
+from utilities import data
+from models.gnn import BasicGNN
 
 import tensorflow as tf
+import numpy as np
+
 import logging
 import models
 import inspect
 import os
 
+from utilities.metrics import top_k_metrics
+
 PARAMS_PATH = 'config.yaml'
 
 
-class Trainer:
+class Experimenter:
     def __init__(self, config: str):
         """
-        Encapsulates all objects needed and performs the train
+        Encapsulates all objects needed and performs the train and the evaluation
 
         :param config: Path of config file
         """
-        with open(PARAMS_PATH, 'r') as params_file:
+        with open(config, 'r') as params_file:
             yaml = YAML()
             config_str = params_file.read()
             self.config = EasyDict(**yaml.load(config_str))
@@ -29,7 +34,7 @@ class Trainer:
         self.exp_name = \
             strftime("%m_%d-%H_%M") + '-' + \
             self.config.model.name + '-' + \
-            self.config.dataset.name + '-' + \
+            self.config.dataset.load_function_name + '-' + \
             self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
@@ -46,7 +51,9 @@ class Trainer:
         self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
 
         self._retrieve_classes()
-        self.dataset = None
+        self.trainset = None
+        self.testset = None
+        self.model = None
         self.parameters = self.config.parameters
 
     def _retrieve_classes(self):
@@ -60,17 +67,17 @@ class Trainer:
         model_module = getattr(model_package, model_module)
         self.config.model_class = getattr(model_module, model_class)
 
-        self.config.dataset_class = getattr(datasets, self.config.dataset.name)
+        self.config.load_function = getattr(data, self.config.dataset.load_function_name)
 
     def build_dataset(self):
         """
         Builds dataset from configs
         """
-        self.logger.info('Building dataset...')
-        init_parameters = inspect.signature(self.config.dataset_class.__init__).parameters
+        # Get parameters from load method
+        init_parameters = inspect.signature(self.config.load_function).parameters
         parameters = {k: self.config.dataset[k]
                       for k in self.config.dataset.keys() & init_parameters.keys()}
-        self.dataset = self.config.dataset_class(**parameters)
+        self.trainset, self.testset = self.config.load_function(**parameters)
 
     def build_model(self):
         """
@@ -80,7 +87,12 @@ class Trainer:
         init_parameters = inspect.signature(self.config.model_class.__init__).parameters
         parameters = {k: self.config.model[k]
                       for k in self.config.model.keys() & init_parameters.keys()}
-        self.model = self.config.model_class(**parameters)
+
+        # Additional parameter for GNNs
+        if issubclass(self.config.model_class, BasicGNN):
+            self.model = self.config.model_class(self.trainset.adj_matrix, **parameters)
+        else:
+            self.model = self.config.model_class(**parameters)
 
     def train(self):
         """
@@ -103,7 +115,7 @@ class Trainer:
             metrics=self.parameters.metrics
         )
         history = self.model.fit(
-            self.dataset,
+            self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
             callbacks=[self.tensorboard])
@@ -111,11 +123,32 @@ class Trainer:
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
         save_path = path_join(self.config.dest, 'model.h5')
-        tf.saved_model.save(self.model, save_path)
+        # tf.saved_model.save(self.model, save_path) # <-----------------------------------  ECCOLO QUA LO STRONZO INFAME CHE NON FUNZIONA
         self.logger.info('Succesfully saved in ' + save_path)
+
+    def evaluate(self):
+        """
+        Evaluates the trained model
+        """
+        self.model.evaluate(self.testset, callbacks=[self.tensorboard])
+
+        # Compute Precision, Recall and F1 @K metrics
+        predictions = self.model.predict(self.testset)
+        ratings_pred = np.concatenate([self.testset.ratings[:, [0, 1]], predictions], axis=1)
+        self.logger.info('P@ 5, R@ 5, F@ 5: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=5)))
+        self.logger.info('P@10, R@10, F@10: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=10)))
+        self.logger.info('P@20, R@20, F@20: {}'.format(top_k_metrics(self.testset.ratings, ratings_pred, k=20)))
+
+    def run(self):
+        """
+        Run a full experiment (train and evaluation)
+        :return:
+        """
+        self.train()
+        self.evaluate()
 
 
 if __name__ == "__main__":
 
-    trainer = Trainer(PARAMS_PATH)
-    trainer.train()
+    experimenter = Experimenter(PARAMS_PATH)
+    experimenter.run()

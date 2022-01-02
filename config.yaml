@@ -1,23 +1,28 @@
-user_source:
-item_source:
 dest: exp
 details: just_try
 prediction_dest: predictions
-ratings:
 n_workers: 4
 
 model:
-  name: basic.BasicRS
+  name: gnn.BasicGCN
   feature_based: False # For HybridCBRS
+  embedding_dim: 16
+  n_hiddens: !!python/tuple [16, 16, 16]
+  l2_regularizer: 1e-4
+  dense_units: !!python/tuple [64, 32]
+  clf_units: !!python/tuple [32, 32]
 
 dataset:
-  name: UserItemEmbeddings
-  ratings_filepath: datasets/movielens/train2id.tsv
+  load_function_name: load_user_item_graph
+  train_ratings_filepath: datasets/movielens/train2id.tsv
+  test_ratings_filepath: datasets/movielens/test2id.tsv
   graph_filepath:
   user_filepath: embeddings/bert/user-lastlayer.json
   item_filepath: embeddings/bert/item-lastlayer.json
-  evaluate: False
-  batch_size: 512
+  binary_adjacency: False
+  sparse_adjacency: True
+  train_batch_size: 1024
+  test_batch_size: 2048
   shuffle: False
   seed: 42
 
