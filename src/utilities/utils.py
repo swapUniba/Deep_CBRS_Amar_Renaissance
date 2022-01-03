@@ -4,11 +4,8 @@ import pandas as pd
 import csv
 import numpy as np
 import json
-import tensorflow as tf
 from tensorflow import keras
-from numpy import loadtxt
-from keras.models import Sequential
-from keras.layers import Dense
+from keras.utils.layer_utils import count_params
 
 
 def read_bert_embeddings(filename_users, filename_items):
@@ -229,3 +226,12 @@ class LogCallback(keras.callbacks.Callback):
             msg = reduce(lambda a, b: a + b, ["{}: {},\t".format(key, value) for key, value in logs.items()])
             self.log.info("Batch {} \t - {}".format(batch, msg))
 
+
+def get_total_parameters(model):
+    if hasattr(model, '_collected_trainable_weights'):
+        trainable_count = count_params(model._collected_trainable_weights)
+    else:
+        trainable_count = count_params(model.trainable_weights)
+
+    non_trainable_count = count_params(model.non_trainable_weights)
+    return trainable_count, non_trainable_count

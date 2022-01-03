@@ -4,9 +4,8 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities import data
-from utilities.utils import LogCallback
+from utilities.utils import LogCallback, get_total_parameters
 from models.gnn import BasicGNN
-from keras.callbacks import CSVLogger
 
 import tensorflow as tf
 import numpy as np
@@ -104,6 +103,24 @@ class Experimenter:
         else:
             self.model = self.config.model_class(**self.config.model)
 
+        optimizer = self.config.optimizer_class(
+            learning_rate=self.parameters.optimizer.lr,
+            beta_1=self.parameters.optimizer.beta
+        )
+        self.model.compile(
+            loss=self.parameters.loss,
+            optimizer=optimizer,
+            metrics=self.parameters.metrics
+        )
+        # One prediction is needed to build the model
+        self.model.predict(self.trainset[0][0])
+        self.model.summary(print_fn=self.logger.info, expand_nested=True)
+        with self.board_writer.as_default():
+            trainable, non_trainable = get_total_parameters(self.model)
+            tf.summary.scalar('trainable_params', trainable, step=0)
+            tf.summary.scalar('non_trainable_params', non_trainable, step=0)
+
+
     def train(self):
         """
         Trains a model on the given parameters, and saves it
@@ -115,15 +132,6 @@ class Experimenter:
         self.build_model()
 
         self.logger.info('Training:')
-        optimizer = self.config.optimizer_class(
-            learning_rate=self.parameters.optimizer.lr,
-            beta_1=self.parameters.optimizer.beta
-        )
-        self.model.compile(
-            loss=self.parameters.loss,
-            optimizer=optimizer,
-            metrics=self.parameters.metrics
-        )
         history = self.model.fit(
             self.trainset,
             epochs=self.parameters.epochs,
