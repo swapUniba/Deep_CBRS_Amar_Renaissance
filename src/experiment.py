@@ -97,15 +97,12 @@ class Experimenter:
         Builds model from config parameters
         """
         self.logger.info('Building model...')
-        init_parameters = inspect.signature(self.config.model_class.__init__).parameters
-        parameters = {k: self.config.model[k]
-                      for k in self.config.model.keys() & init_parameters.keys()}
 
         # Additional parameter for GNNs
         if issubclass(self.config.model_class, BasicGNN):
-            self.model = self.config.model_class(self.trainset.adj_matrix, **parameters)
+            self.model = self.config.model_class(self.trainset.adj_matrix, **self.config.model)
         else:
-            self.model = self.config.model_class(**parameters)
+            self.model = self.config.model_class(**self.config.model)
 
     def train(self):
         """

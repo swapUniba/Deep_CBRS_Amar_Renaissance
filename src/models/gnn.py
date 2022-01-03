@@ -18,18 +18,20 @@ class BasicGNN(models.Model):
         l2_regularizer=None,
         dense_units=(32, 16),
         clf_units=(16, 16),
-        activation='relu'
+        activation='relu',
+        **kwargs
     ):
         """
         Initialize a Basic recommender system based on Graph Neural Networks (GCN).
 
-        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
         :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
+        :param **kwargs: Additional args not used.
         """
         super().__init__()
 
@@ -98,7 +100,7 @@ class BasicGCN(BasicGNN):
         """
         Initialize a Basic recommender system based on Graph Convolutional Networks (GCN).
 
-        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         """
         # Note normalizing the adjacency matrix using the GCN filter
@@ -129,7 +131,7 @@ class BasicGAT(BasicGNN):
         """
         Initialize a Basic recommender system based on Graph Attention Networks (GAT).
 
-        :param adj_matrix: The graph adjency matrix. It can be either sparse or dense.
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hiddens: A sequence of numbers of hidden units for each GAT layer.
         """
         super().__init__(
