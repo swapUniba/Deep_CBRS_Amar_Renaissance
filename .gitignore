@@ -3,6 +3,7 @@
 
 venv
 __pycache__
+exp
 
 datasets/*
 !datasets/.keep
