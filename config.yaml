@@ -2,6 +2,7 @@ dest: exp
 details: First-try
 prediction_dest: predictions
 n_workers: 12
+seed: 42
 
 model:
   name: gnn.BasicGCN
@@ -24,7 +25,6 @@ dataset:
   train_batch_size: 1024
   test_batch_size: 2048
   shuffle: False
-  seed: 42
 
 parameters:
   epochs: 25

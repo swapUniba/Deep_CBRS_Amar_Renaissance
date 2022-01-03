@@ -34,6 +34,10 @@ class Experimenter:
             config_str = params_file.read()
             self.config = EasyDict(**yaml.load(config_str))
 
+        tf.random.set_seed(
+            self.config.seed
+        )
+
         self.exp_name = \
             strftime("%m_%d-%H_%M") + '-' + \
             self.config.model.name + '-' + \
