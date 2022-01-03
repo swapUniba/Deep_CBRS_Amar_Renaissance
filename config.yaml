@@ -24,7 +24,7 @@ dataset:
   sparse_adjacency: True
   train_batch_size: 1024
   test_batch_size: 2048
-  shuffle: False
+  shuffle: True
 
 parameters:
   epochs: 25

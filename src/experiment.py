@@ -124,7 +124,6 @@ class Experimenter:
             tf.summary.scalar('trainable_params', trainable, step=0)
             tf.summary.scalar('non_trainable_params', non_trainable, step=0)
 
-
     def train(self):
         """
         Trains a model on the given parameters, and saves it

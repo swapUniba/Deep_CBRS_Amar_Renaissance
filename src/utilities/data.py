@@ -135,7 +135,7 @@ def load_user_item_graph(
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
-    :param shuffle: tells if shuffle the dataset.
+    :param shuffle: Tells if shuffle the training dataset.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
@@ -155,6 +155,6 @@ def load_user_item_graph(
     )
     data_test = UserItemGraph(
         test_ratings, adj_matrix,
-        batch_size=test_batch_size, shuffle=shuffle
+        batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
