@@ -219,10 +219,10 @@ class LogCallback(keras.callbacks.Callback):
         keys = list(logs.keys())
         self.log.info("Stop testing; got log keys: {}".format(keys))
 
-    def on_train_batch_end(self, batch, logs=None):
-        if batch % self.log_frequency == 0:
-            msg = reduce(lambda a, b: a + b, ["{}: {},\t".format(key, value) for key, value in logs.items()])
-            self.log.info("Batch {} \t - {}".format(batch, msg))
+    # def on_train_batch_end(self, batch, logs=None):
+    #     if batch % self.log_frequency == 0:
+    #         msg = reduce(lambda a, b: a + b, ["{}: {},\t".format(key, value) for key, value in logs.items()])
+    #         self.log.info("Batch {} \t - {}".format(batch, msg))
 
     def on_test_batch_end(self, batch, logs=None):
         if batch % self.log_frequency == 0:

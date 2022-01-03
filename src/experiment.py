@@ -20,7 +20,7 @@ import os
 from utilities.metrics import top_k_metrics
 
 PARAMS_PATH = 'config.yaml'
-LOG_FREQUENCY = 10
+LOG_FREQUENCY = 100
 
 
 class Experimenter:

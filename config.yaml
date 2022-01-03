@@ -1,7 +1,7 @@
 dest: exp
-details: just_try
+details: First-try
 prediction_dest: predictions
-n_workers: 4
+n_workers: 12
 
 model:
   name: gnn.BasicGCN
@@ -27,7 +27,7 @@ dataset:
   seed: 42
 
 parameters:
-  epochs: 1
+  epochs: 25
   optimizer:
     name: Adam
     lr: 0.001
