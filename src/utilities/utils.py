@@ -1,11 +1,13 @@
 import time
 from functools import reduce
+from itertools import groupby, product
 
 import pandas as pd
 import csv
 import numpy as np
 import json
 import tensorflow as tf
+import collections
 
 from tensorflow import keras
 from keras.utils.layer_utils import count_params
@@ -244,3 +246,51 @@ def get_total_parameters(model):
 
     non_trainable_count = count_params(model.non_trainable_weights)
     return trainable_count, non_trainable_count
+
+
+def nested_dict_update(d, u):
+    """
+    Dictionary update suitable for nested dictionary
+    :param d: original dict
+    :param u: dict from where updates are taken
+    :return: Updated dictionary
+    """
+    for k, v in u.items():
+        if isinstance(v, collections.abc.Mapping):
+            d[k] = nested_dict_update(d.get(k, {}), v)
+        else:
+            d[k] = v
+    return d
+
+
+def linearize(grid):
+    exps = []
+    for key, value in grid.items():
+        if isinstance(value, collections.abc.Mapping):
+            exps.extend(((key, lin_key), lin_value) for lin_key, lin_value in linearize(value))
+        if isinstance(value, list):
+            exps.append((key, value))
+    return exps
+
+
+def extract(elem: tuple):
+    if len(elem) == 1:
+        return elem[0]
+    return elem
+
+
+def delinearize(lin_dict):
+    filtered = list(filter(lambda x: isinstance(x[0], tuple), lin_dict.items()))
+    grouped = groupby(filtered, lambda x: x[0][0])
+    new_dict = {k: delinearize({extract(elem[0][1:]): elem[1] for elem in v}) for k, v in grouped}
+    for key, value in filtered:
+        lin_dict.pop(key)
+    delin_dict = {**lin_dict, **new_dict}
+    return delin_dict
+
+
+def make_grid(dict_of_list):
+    linearized_dict = linearize(dict_of_list)
+    keys, values = zip(*linearized_dict)
+    grid_dict = list(dict(zip(keys, values_list)) for values_list in product(*values))
+    return [delinearize(dictionary) for dictionary in grid_dict]

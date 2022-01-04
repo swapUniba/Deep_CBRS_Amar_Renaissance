@@ -4,7 +4,7 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities import data
-from utilities.utils import LogCallback, get_total_parameters
+from utilities.utils import LogCallback, get_total_parameters, nested_dict_update, make_grid
 from models.gnn import BasicGNN
 
 import tensorflow as tf
@@ -15,24 +15,24 @@ import logging
 import models
 import inspect
 import os
+import io
 
 from utilities.metrics import top_k_metrics
 
 PARAMS_PATH = 'config.yaml'
+EXPERIMENTS_PATH = 'experiments.yaml'
 LOG_FREQUENCY = 100
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
 class Experimenter:
-    def __init__(self, config: str):
+    def __init__(self, config):
         """
         Encapsulates all objects needed and performs the train and the evaluation
 
-        :param config: Path of config file
+        :param config: dict of configuration parameters
         """
-        with open(config, 'r') as params_file:
-            yaml = YAML()
-            config_str = params_file.read()
-            self.config = EasyDict(**yaml.load(config_str))
+        self.config = EasyDict(**config)
 
         tf.random.set_seed(
             self.config.seed
@@ -41,11 +41,16 @@ class Experimenter:
         self.exp_name = \
             strftime("%m_%d-%H_%M") + '-' + \
             self.config.model.name + '-' + \
-            self.config.dataset.load_function_name + '-' + \
+            str(self.config.model.l2_regularizer) + '-' + \
+            self.config.model.final_node + '-' + \
             self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
         os.makedirs(self.config.dest, exist_ok=True)
+
+        # Save the config in the experiment folder (R E P R O D U C I B I L I T Y)
+        with open(path_join(self.config.dest, "config.yaml"), 'w') as config_output:
+            YAML().dump(config, config_output)
 
         # Logging stuff
         file_handler = logging.FileHandler(path_join(self.config.dest, 'log.txt'))
@@ -56,11 +61,17 @@ class Experimenter:
             format="%(asctime)s %(message)s",
             datefmt='[%H:%M:%S]',
             level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+        self.logger = logging.getLogger(self.exp_name)
         self.logger.addHandler(logging.StreamHandler())
-        self.callback_logger = logging.getLogger('callback')
-        self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
+        self.callback_logger = logging.getLogger(self.exp_name + '_callback')
+        self.logger.log(logging.INFO, 'CONFIG \n')
 
+        # Print config
+        config_str = io.StringIO()
+        YAML().dump(config, config_str)
+        config_str = config_str.getvalue()
+        self.logger.info('CONFIG')
+        self.logger.info(config_str)
         # Tensorboard
         self.tensorboard = tf.keras.callbacks.TensorBoard(
             log_dir=self.config.dest,
@@ -181,6 +192,59 @@ class Experimenter:
         self.evaluate()
 
 
+class MultiExperimenter:
+    """
+    Runs multiple experiments by reading an experiment file and overriding parameters from a base config
+    """
+
+    def __init__(self):
+        # Loads the base config
+        with open(PARAMS_PATH, 'r') as params_file:
+            yaml = YAML()
+            config_str = params_file.read()
+            self.base_config = yaml.load(config_str)
+
+        # Loads the experiments file
+        with open(EXPERIMENTS_PATH, 'r') as params_file:
+            yaml = YAML()
+            config_str = params_file.read()
+            config = yaml.load(config_str)
+
+        # Get list of experiments
+        self.experiments = config.get('linear') if config.get('linear') else {}
+        dict_lists = config.get('grid')
+        dicts = make_grid(dict_lists)
+        self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
+        print("Retrieved experiments:")
+        for exp in self.experiments.keys():
+            print(exp)
+
+    def run_experiment(self, exp_name):
+        """
+        Runs a specific experiment
+        :param exp_name: Desired experiment to run
+        """
+
+        additional_params = self.experiments[exp_name]
+        config = self.base_config.copy()
+        if additional_params:  # Dict could also be None to run the base config
+            config = nested_dict_update(config, additional_params)
+
+        print('-----------------------------------------------\n'
+              '{}\n'.format(exp_name),
+              '-----------------------------------------------\n'
+              )
+        exp = Experimenter(config)
+        exp.run()
+
+    def run(self):
+        """
+        Runs all the experiments
+        """
+        for exp_name in self.experiments:
+            self.run_experiment(exp_name)
+
+
 if __name__ == "__main__":
-    experimenter = Experimenter(PARAMS_PATH)
-    experimenter.run()
+    exps = MultiExperimenter()
+    exps.run()

@@ -192,15 +192,3 @@ class BasicGraphSage(BasicGNN):
             for n_hidden in n_hiddens
         ]
 
-    def call(self, inputs, **kwargs):
-        # Compute the hidden states given by each GCN layer
-        x = self.embeddings
-        prev = x
-        for gnn in self.gnn_layers:
-            x = gnn([x, self.adj_matrix])
-            if self.dropout is not None:
-                x = self.dropout(x)
-            x = self.concat([prev, x])
-            prev = x
-
-        return self.embed_recommend(x, inputs)
