@@ -7,6 +7,7 @@ from spektral.utils.convolution import gcn_filter
 from spektral.layers import GATConv, GCNConv, GraphSageConv
 
 from models.basic import BasicRS
+from models.layer import ReductionLayer
 
 
 class BasicGNN(models.Model):
@@ -16,6 +17,7 @@ class BasicGNN(models.Model):
         embedding_dim=8,
         dropout=None,
         l2_regularizer=None,
+        final_node="concatenation",
         dense_units=(32, 16),
         clf_units=(16, 16),
         activation='relu',
@@ -28,6 +30,8 @@ class BasicGNN(models.Model):
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
         :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
+        :param final_node:
+            Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean).
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
@@ -61,13 +65,10 @@ class BasicGNN(models.Model):
             self.adj_matrix = tf.convert_to_tensor(adj_matrix, dtype=tf.float32)
 
         # Build the dropout layer
-        if dropout is not None:
-            self.dropout = layers.Dropout(dropout)
-        else:
-            self.dropout = None
+        self.dropout = layers.Dropout(dropout) if dropout else None
 
-        # Build the concat layer and the Basic recommender system
-        self.concat = layers.Concatenate()
+        # Build the last layer and the Basic recommender system
+        self.reduce = ReductionLayer(final_node)
         self.rs = BasicRS(dense_units, clf_units, activation=activation)
 
     def call(self, inputs, **kwargs):
@@ -80,8 +81,8 @@ class BasicGNN(models.Model):
                 x = self.dropout(x)
             hs.append(x)
 
-        # Concat the outputs of each GCN layer
-        x = self.concat(hs)
+        # Reduce the outputs of each GCN layer
+        x = self.reduce(hs)
         return self.embed_recommend(x, inputs)
 
     def embed_recommend(self, embeddings, inputs):

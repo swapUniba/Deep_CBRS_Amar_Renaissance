@@ -1,14 +1,16 @@
 dest: exp
-details: First-try
+details: try
 prediction_dest: predictions
 n_workers: 12
 seed: 42
 
 model:
-  name: gnn.BasicGraphSage
+  name: gnn.BasicGCN
   embedding_dim: 16
   n_hiddens: !!python/tuple [16, 16, 16]
   l2_regularizer: 1e-4
+  # Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean)
+  final_node: 'concatenation'
   # Graph sage
   aggregate: mean
   # BasicRS
