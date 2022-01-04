@@ -5,13 +5,17 @@ n_workers: 12
 seed: 42
 
 model:
-  name: gnn.BasicGCN
-  feature_based: False # For HybridCBRS
+  name: gnn.BasicGraphSage
   embedding_dim: 16
   n_hiddens: !!python/tuple [16, 16, 16]
   l2_regularizer: 1e-4
+  # Graph sage
+  aggregate: mean
+  # BasicRS
   dense_units: !!python/tuple [64, 32]
   clf_units: !!python/tuple [32, 32]
+  # HybridCBRS
+  feature_based: False
 
 dataset:
   load_function_name: load_user_item_graph

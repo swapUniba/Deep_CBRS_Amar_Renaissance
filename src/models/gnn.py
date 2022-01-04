@@ -4,7 +4,7 @@ from scipy import sparse
 from tensorflow.keras import models, layers, regularizers
 
 from spektral.utils.convolution import gcn_filter
-from spektral.layers import GATConv, GCNConv
+from spektral.layers import GATConv, GCNConv, GraphSageConv
 
 from models.basic import BasicRS
 
@@ -82,11 +82,19 @@ class BasicGNN(models.Model):
 
         # Concat the outputs of each GCN layer
         x = self.concat(hs)
+        return self.embed_recommend(x, inputs)
 
-        # Lookup for user and item representations and pass through the recommender model
+    def embed_recommend(self, embeddings, inputs):
+        """
+        Lookup for user and item representations and pass through the recommender model
+        :param inputs: (user, item)
+        :param embeddings: embeddings produced from previous layers
+        :return: Recommendation
+        """
+
         u, i = inputs
-        u = tf.nn.embedding_lookup(x, u)
-        i = tf.nn.embedding_lookup(x, i)
+        u = tf.nn.embedding_lookup(embeddings, u)
+        i = tf.nn.embedding_lookup(embeddings, i)
         return self.rs([u, i])
 
 
@@ -142,9 +150,56 @@ class BasicGAT(BasicGNN):
         self.gnn_layers = [
             GATConv(
                 n_hidden,
-                activation='relu',  # Or we should just follow LightGCN and set this to None ?
+                activation='relu',
                 kernel_regularizer=self.regularizer,
                 bias_regularizer=self.regularizer
             )
             for n_hidden in n_hiddens
         ]
+        # Layer concatenation for output
+        self.concat = layers.Concatenate()
+
+
+class BasicGraphSage(BasicGNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_hiddens=(8, 8, 8),
+            aggregate='mean',
+            **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on Graph Sage.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GraphSage layer.
+        :param aggregate: Which aggregation function to use in update (mean, max, ...)
+        """
+        super().__init__(
+            adj_matrix,
+            **kwargs)
+
+        # Build GraphSage layers
+        self.gnn_layers = [
+            GraphSageConv(
+                n_hidden,
+                activation='relu',
+                aggregate=aggregate,
+                kernel_regularizer=self.regularizer,
+                bias_regularizer=self.regularizer
+            )
+            for n_hidden in n_hiddens
+        ]
+
+    def call(self, inputs, **kwargs):
+        # Compute the hidden states given by each GCN layer
+        x = self.embeddings
+        prev = x
+        for gnn in self.gnn_layers:
+            x = gnn([x, self.adj_matrix])
+            if self.dropout is not None:
+                x = self.dropout(x)
+            x = self.concat([prev, x])
+            prev = x
+
+        return self.embed_recommend(x, inputs)
