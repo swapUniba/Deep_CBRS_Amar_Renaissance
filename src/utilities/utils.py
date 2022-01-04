@@ -1,9 +1,12 @@
+import time
 from functools import reduce
 
 import pandas as pd
 import csv
 import numpy as np
 import json
+import tensorflow as tf
+
 from tensorflow import keras
 from keras.utils.layer_utils import count_params
 
@@ -184,21 +187,27 @@ def top_scores(predictions, n):
 
 
 class LogCallback(keras.callbacks.Callback):
-    def __init__(self, log, frequency):
+    def __init__(self, log, writer, frequency):
         """
 
         :param log: log object
+        :param writer: Summary Writer
         :param frequency: frequency of logging batches (too much frequency will slow down the process)
         """
         super().__init__()
         self.log = log
+        self.writer = writer
         self.log_frequency = frequency
+        self.train_start = None
 
     def on_train_begin(self, logs=None):
         keys = list(logs.keys())
+        self.train_start = time.perf_counter()
         self.log.info("Starting training - got log keys: {}".format(keys))
 
     def on_train_end(self, logs=None):
+        with self.writer.as_default():
+            tf.summary.scalar('train_time', time.perf_counter() - self.train_start, step=0)
         self.log.info("End training")
 
     def on_epoch_begin(self, epoch, logs=None):

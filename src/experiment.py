@@ -142,7 +142,7 @@ class Experimenter:
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[self.tensorboard, LogCallback(self.callback_logger, LOG_FREQUENCY)])
+            callbacks=[self.tensorboard, LogCallback(self.callback_logger, self.board_writer, LOG_FREQUENCY)])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
