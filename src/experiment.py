@@ -62,7 +62,10 @@ class Experimenter:
         self.logger.log(logging.INFO, 'CONFIG \n' + config_str + '\n')
 
         # Tensorboard
-        self.tensorboard = tf.keras.callbacks.TensorBoard(log_dir=self.config.dest, histogram_freq=LOG_FREQUENCY)
+        self.tensorboard = tf.keras.callbacks.TensorBoard(
+            log_dir=self.config.dest,
+            histogram_freq=LOG_FREQUENCY,
+            profile_batch='500,520')
         self.board_writer = tf.summary.create_file_writer(self.config.dest + "/metrics")
         self.board_writer.set_as_default()
 
@@ -179,6 +182,5 @@ class Experimenter:
 
 
 if __name__ == "__main__":
-
     experimenter = Experimenter(PARAMS_PATH)
     experimenter.run()
