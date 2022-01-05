@@ -6,9 +6,11 @@ class ReductionLayer(layers.Layer):
     """
     Reduces outputs from previous layers of the GNN
     """
-    def __init__(self, method='concatenate'):
+    def __init__(self, method='concatenate', shape=None, regularizer=None):
         """
         :param method: Defines the reduction method (concatenation, sum, mean, last, w-mean).
+        :param shape: For w-sum only, input shape.
+        :param regularizer: Fot w-sum only, regularizer of weights.
         """
         super(ReductionLayer, self).__init__()
         if method == 'concatenation':
@@ -18,7 +20,7 @@ class ReductionLayer(layers.Layer):
         elif method == 'mean':
             self.layer = ReductionLayer.tensor_mean
         elif method == 'w-mean':
-            raise NotImplementedError('Weighted mean have to be implemented')
+            self.layer = WeightedSum(shape, regularizer)
         elif method == 'last':
             self.layer = lambda inputs: inputs[-1]
         else:
@@ -30,3 +32,20 @@ class ReductionLayer(layers.Layer):
 
     def call(self, inputs):
         return self.layer(inputs)
+
+
+class WeightedSum(layers.Layer):
+    """
+    Computes Weighted sum of input tensor with learnable weights
+    """
+    def __init__(self, shape, regularizer, **kwargs):
+        super(WeightedSum, self).__init__(**kwargs)
+        self.w = self.add_weight(
+            name='embeddings',
+            shape=shape,
+            initializer='glorot_uniform',
+            regularizer=regularizer
+        )
+
+    def call(self, inputs):
+        return tf.reduce_sum(tf.multiply(self.w, inputs))
