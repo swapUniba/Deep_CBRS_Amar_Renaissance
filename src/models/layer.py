@@ -41,11 +41,11 @@ class WeightedSum(layers.Layer):
     def __init__(self, shape, regularizer, **kwargs):
         super(WeightedSum, self).__init__(**kwargs)
         self.w = self.add_weight(
-            name='embeddings',
+            name='wsum',
             shape=shape,
             initializer='glorot_uniform',
             regularizer=regularizer
         )
 
     def call(self, inputs):
-        return tf.reduce_sum(tf.multiply(self.w, inputs))
+        return tf.reduce_sum(tf.multiply(tf.pow(self.w, 2), inputs))
