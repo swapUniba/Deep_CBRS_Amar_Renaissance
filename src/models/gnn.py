@@ -3,7 +3,6 @@ import tensorflow as tf
 from scipy import sparse
 from tensorflow.keras import models, layers, regularizers
 
-from spektral.utils.convolution import gcn_filter
 from spektral.layers import GATConv, GCNConv, GraphSageConv
 
 from models.basic import BasicRS
