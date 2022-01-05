@@ -9,7 +9,8 @@ class HybridCBRS(models.Model):
         feature_based=False,
         dense_units=((512, 256, 128), (64, 64)),
         clf_units=(64, 64),
-        activation='relu'
+        activation='relu',
+        **kwargs
     ):
         super().__init__()
         self.feature_based = feature_based

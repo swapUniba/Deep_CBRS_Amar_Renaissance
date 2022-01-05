@@ -102,6 +102,10 @@ class HybridUserItemEmbeddings(keras.utils.Sequence):
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
 
+    @property
+    def ratings(self):
+        return self.graph_embeddings.ratings
+
     def __len__(self):
         """
         Get the number of batches.

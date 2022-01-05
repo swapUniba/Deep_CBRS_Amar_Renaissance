@@ -40,10 +40,17 @@ class Experimenter:
 
         self.exp_name = \
             strftime("%m_%d-%H_%M") + '-' + \
-            self.config.model.name + '-' + \
-            str(self.config.model.l2_regularizer) + '-' + \
-            self.config.model.final_node + '-' + \
-            self.config.details
+            self.config.model.name
+        if 'gnn' in self.config.model.name:
+            self.exp_name = self.exp_name + '-' + \
+                str(self.config.model.l2_regularizer) + '-' + \
+                self.config.model.final_node
+        elif 'hybrid' in self.config.model.name:
+            if self.config.model.feature_based:
+                self.exp_name = self.exp_name + '-' + 'feature'
+            else:
+                self.exp_name = self.exp_name + '-' + 'entity'
+        self.exp_name = self.exp_name + '-' + self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
         os.makedirs(self.config.dest, exist_ok=True)

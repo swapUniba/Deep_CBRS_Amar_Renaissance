@@ -16,7 +16,7 @@ model:
   aggregate: mean
   # LightGCN
   n_layers: 3
-  # BasicRS
+  # BasicRS and HybridCBRS
   dense_units: !!python/tuple [64, 32]
   clf_units: !!python/tuple [32, 32]
   # HybridCBRS
@@ -24,13 +24,16 @@ model:
 
 dataset:
   load_function_name: load_user_item_graph
-  train_ratings_filepath: datasets/movielens/train2id.tsv
-  test_ratings_filepath: datasets/movielens/test2id.tsv
-  graph_filepath:
-  user_filepath: embeddings/bert/user-lastlayer.json
-  item_filepath: embeddings/bert/item-lastlayer.json
+  # For load_user_item_graph function name
   binary_adjacency: False
   sparse_adjacency: True
+  # Basic or Hybrid embeddings datasets
+  graph_filepath: embeddings/user-item-properties/768DistMult.json
+  bert_user_filepath: embeddings/bert/user-lastlayer.json
+  bert_item_filepath: embeddings/bert/item-lastlayer.json
+  # For all the datasets
+  train_ratings_filepath: datasets/movielens/train2id.tsv
+  test_ratings_filepath: datasets/movielens/test2id.tsv
   train_batch_size: 1024
   test_batch_size: 2048
   shuffle: True

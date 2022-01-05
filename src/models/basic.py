@@ -8,7 +8,8 @@ class BasicRS(models.Model):
         self,
         dense_units=(512, 256, 128),
         clf_units=(64, 64),
-        activation='relu'
+        activation='relu',
+        **kwargs
     ):
         super().__init__()
         self.concat = layers.Concatenate()
