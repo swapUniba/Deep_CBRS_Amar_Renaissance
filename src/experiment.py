@@ -214,8 +214,9 @@ class MultiExperimenter:
         self.experiments = config.get('linear') if config.get('linear') else {}
         # Get grid of experiments
         dict_lists = config.get('grid')
-        dicts = make_grid(dict_lists)
-        self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
+        if dict_lists:
+            dicts = make_grid(dict_lists)
+            self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
         print("Retrieved experiments:")
         for exp in self.experiments.keys():
             print(exp)
