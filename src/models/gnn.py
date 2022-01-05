@@ -115,7 +115,7 @@ class BasicGCN(BasicGNN):
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         """
         # Note normalizing the adjacency matrix using the GCN filter
-        adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
+        adj_matrix = GCNConv.preprocess(adj_matrix.astype(np.float32, copy=False))
         super().__init__(
             adj_matrix,
             **kwargs)
@@ -212,7 +212,7 @@ class BasicLightGCN(BasicGNN):
         kwargs['final_node'] = 'mean'
 
         # Note normalizing the adjacency matrix using the GCN filter
-        adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
+        adj_matrix = LightGCNConv.preprocess(adj_matrix.astype(np.float32, copy=False))
         super().__init__(
             adj_matrix,
             **kwargs)
