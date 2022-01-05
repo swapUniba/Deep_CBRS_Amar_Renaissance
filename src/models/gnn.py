@@ -7,7 +7,8 @@ from spektral.utils.convolution import gcn_filter
 from spektral.layers import GATConv, GCNConv, GraphSageConv
 
 from models.basic import BasicRS
-from models.layer import ReductionLayer
+from layers.lightgcn_conv import LightGCNConv
+from layers.reduction import ReductionLayer
 
 
 class BasicGNN(models.Model):
@@ -30,8 +31,8 @@ class BasicGNN(models.Model):
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
         :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
-        :param final_node:
-            Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean).
+        :param final_node: Defines how the final node will be represented from layers. One between the following:
+                           'concatenation', 'sum', 'mean', 'w-sum', 'last'.
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
@@ -67,8 +68,10 @@ class BasicGNN(models.Model):
         # Build the dropout layer
         self.dropout = layers.Dropout(dropout) if dropout else None
 
-        # Build the last layer and the Basic recommender system
+        # Build the reduction layer
         self.reduce = ReductionLayer(final_node)
+
+        # Build the Basic recommender system
         self.rs = BasicRS(dense_units, clf_units, activation=activation)
 
     def call(self, inputs, **kwargs):
@@ -92,7 +95,6 @@ class BasicGNN(models.Model):
         :param embeddings: embeddings produced from previous layers
         :return: Recommendation
         """
-
         u, i = inputs
         u = tf.nn.embedding_lookup(embeddings, u)
         i = tf.nn.embedding_lookup(embeddings, i)
@@ -170,7 +172,7 @@ class BasicGraphSage(BasicGNN):
             **kwargs
     ):
         """
-        Initialize a Basic recommender system based on Graph Sage.
+        Initialize a Basic recommender system based on GraphSage.
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hiddens: A sequence of numbers of hidden units for each GraphSage layer.
@@ -192,3 +194,31 @@ class BasicGraphSage(BasicGNN):
             for n_hidden in n_hiddens
         ]
 
+
+class BasicLightGCN(BasicGNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_layers=3,
+            **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on LightGCN.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_layers: The number of sequential LightGCN layers.
+        """
+        # Override final_node parameter to 'mean'
+        kwargs['final_node'] = 'mean'
+
+        # Note normalizing the adjacency matrix using the GCN filter
+        adj_matrix = gcn_filter(adj_matrix.astype(np.float32, copy=False))
+        super().__init__(
+            adj_matrix,
+            **kwargs)
+
+        # Build LightGCN layers
+        self.gnn_layers = [
+            LightGCNConv()
+            for _ in range(n_layers)
+        ]
