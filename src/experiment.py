@@ -138,7 +138,7 @@ class Experimenter:
             metrics=self.parameters.metrics
         )
         # One prediction is needed to build the model
-        self.model.predict(self.trainset[0][0])
+        self.model(self.trainset[0][0])
         self.model.summary(print_fn=self.logger.info, expand_nested=True)
         with self.board_writer.as_default():
             trainable, non_trainable = get_total_parameters(self.model)
