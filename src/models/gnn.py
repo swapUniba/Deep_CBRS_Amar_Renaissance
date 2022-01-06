@@ -161,8 +161,6 @@ class BasicGAT(BasicGNN):
             )
             for n_hidden in n_hiddens
         ]
-        # Layer concatenation for output
-        self.concat = layers.Concatenate()
 
 
 class BasicGraphSage(BasicGNN):
