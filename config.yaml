@@ -12,8 +12,10 @@ model:
   # Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean)
   # It is overwritten to 'mean' in case of LightGCN
   final_node: 'concatenation'
-  # Graph sage
+  # GraphSage
   aggregate: mean
+  # GAT
+  dropout_rate: 0.2
   # LightGCN
   n_layers: 3
   # BasicRS and HybridCBRS

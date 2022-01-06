@@ -136,6 +136,7 @@ class BasicGAT(BasicGNN):
             self,
             adj_matrix,
             n_hiddens=(8, 8, 8),
+            dropout_rate=0.2,
             **kwargs
     ):
         """
@@ -143,6 +144,7 @@ class BasicGAT(BasicGNN):
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hiddens: A sequence of numbers of hidden units for each GAT layer.
+        :param dropout_rate: The dropout rate to apply to the attention coefficients in GAT.
         """
         super().__init__(
             adj_matrix,
@@ -152,6 +154,7 @@ class BasicGAT(BasicGNN):
         self.gnn_layers = [
             GATConv(
                 n_hidden,
+                dropout_rate=dropout_rate,
                 activation='relu',
                 kernel_regularizer=self.regularizer,
                 bias_regularizer=self.regularizer
