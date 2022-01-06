@@ -8,6 +8,7 @@ from spektral.layers import GATConv, GCNConv, GraphSageConv
 from models.basic import BasicRS
 from layers.lightgcn_conv import LightGCNConv
 from layers.reduction import ReductionLayer
+from utilities.math import sparse_matrix_to_tensor
 
 
 class BasicGNN(models.Model):
@@ -55,12 +56,7 @@ class BasicGNN(models.Model):
 
         # Initialize the adjacency matrix constant parameter
         if sparse.issparse(adj_matrix):
-            adj_matrix = adj_matrix.tocoo()
-            self.adj_matrix = tf.sparse.reorder(tf.sparse.SparseTensor(
-                indices=np.mat([adj_matrix.row, adj_matrix.col]).T,
-                values=adj_matrix.data.astype(np.float32, copy=False),
-                dense_shape=adj_matrix.shape
-            ))
+            self.adj_matrix = sparse_matrix_to_tensor(adj_matrix, dtype=tf.float32)
         else:
             self.adj_matrix = tf.convert_to_tensor(adj_matrix, dtype=tf.float32)
 
