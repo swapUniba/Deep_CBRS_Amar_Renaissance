@@ -62,14 +62,15 @@ class BasicGNN(abc.ABC, models.Model):
 
         # Initialize the adjacency matrix constant parameter and n grade neighbors matrix
         if sparse.issparse(adj_matrix):
-            # Compute the n-grade adjacency matrix, if needed
-            if self.cache_neighbours:
-                self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix.todense(), n_hops)
             self.adj_matrix = sparse_matrix_to_tensor(adj_matrix, dtype=tf.float32)
         else:
             self.adj_matrix = tf.convert_to_tensor(adj_matrix, dtype=tf.float32)
-            if self.cache_neighbours:
-                self.n_grade_adjacency = get_ngrade_neighbors(self.adj_matrix, n_hops)
+
+        # Compute the n-grade adjacency matrix, if needed
+        if self.cache_neighbours:
+            if sparse.issparse(adj_matrix):
+                adj_matrix = adj_matrix.todense()
+            self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix, n_hops)
 
         # Build GCN layers
         self.gnn_layers = [self.build_gnn_layer(i) for i in range(n_hops)]
