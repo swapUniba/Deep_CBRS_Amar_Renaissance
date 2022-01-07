@@ -59,21 +59,21 @@ def load_train_test_ratings(
     # Compute the adjacency matrix
     pos_idx = train_ratings[:, 2] == 1
     if binary_adjacency:
-        adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.int32)
-        adj_matrix[0, train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
-        adj_matrix[1, train_ratings[~pos_idx, 0], train_ratings[~pos_idx, 1]] = 1
+        adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.float32)
+        adj_matrix[0, train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1.0
+        adj_matrix[1, train_ratings[~pos_idx, 0], train_ratings[~pos_idx, 1]] = 1.0
         adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
     else:
         if sparse_adjacency:
             adj_matrix = sparse.coo_matrix(
                 (train_ratings[pos_idx, 2], (train_ratings[pos_idx, 0], train_ratings[pos_idx, 1])),
-                shape=[adj_size, adj_size], dtype=np.int32
+                shape=[adj_size, adj_size], dtype=np.float32
             )
             adj_matrix += adj_matrix.T
         else:
-            adj_matrix = np.zeros([adj_size, adj_size], dtype=np.int32)
-            adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1
-            adj_matrix += np.transpose(adj_matrix, axes=[1, 0])
+            adj_matrix = np.zeros([adj_size, adj_size], dtype=np.float32)
+            adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1.0
+            adj_matrix += adj_matrix.T
 
     return (train_ratings, test_ratings), adj_matrix
 
