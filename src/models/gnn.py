@@ -73,7 +73,10 @@ class BasicGNN(abc.ABC, models.Model):
             self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix, n_hops)
 
         # Build GNN layers
-        self.gnn_layers = [self.build_gnn_layer(i) for i in range(n_hops)]
+        gnn_kwargs = {
+            'regularizer': self.regularizer
+        }
+        self.gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
 
         # Build the dropout layer
         self.dropout = layers.Dropout(dropout) if dropout else None
@@ -85,11 +88,12 @@ class BasicGNN(abc.ABC, models.Model):
         self.rs = BasicRS(dense_units, clf_units, activation=activation)
 
     @abc.abstractmethod
-    def build_gnn_layer(self, i):
+    def build_gnn_layer(self, i, **kwargs):
         """
         Abstract method that builds the i-th GNN layer.
 
         :param i: The index.
+        :param kwargs: Additional parameters.
         """
         pass
 
@@ -142,12 +146,12 @@ class BasicGCN(BasicGNN):
             len(n_hiddens),
             **kwargs)
 
-    def build_gnn_layer(self, i):
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
         return GCNConv(
             self.n_hiddens[i],
             activation='relu',
-            kernel_regularizer=self.regularizer,
-            bias_regularizer=self.regularizer
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
         )
 
 
@@ -174,13 +178,13 @@ class BasicGAT(BasicGNN):
             len(n_hiddens),
             **kwargs)
 
-    def build_gnn_layer(self, i):
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
         return GATConv(
             self.n_hiddens[i],
             dropout_rate=self.dropout_rate,
             activation='relu',
-            kernel_regularizer=self.regularizer,
-            bias_regularizer=self.regularizer
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
         )
 
 
@@ -207,13 +211,13 @@ class BasicGraphSage(BasicGNN):
             len(n_hiddens),
             **kwargs)
 
-    def build_gnn_layer(self, i):
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
         return GraphSageConv(
             self.n_hiddens[i],
             activation='relu',
             aggregate=self.aggregate,
-            kernel_regularizer=self.regularizer,
-            bias_regularizer=self.regularizer
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
         )
 
 
@@ -240,5 +244,5 @@ class BasicLightGCN(BasicGNN):
             n_layers,
             **kwargs)
 
-    def build_gnn_layer(self, i):
+    def build_gnn_layer(self, i, **kwargs):
         return LightGCNConv()
