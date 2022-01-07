@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy import sparse
 
-from utilities.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph
+from utilities.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphBertEmbeddings
 
 
 def load_train_test_ratings(
@@ -283,6 +283,55 @@ def load_user_item_graph(
     )
     data_test = UserItemGraph(
         test_ratings, adj_matrix,
+        batch_size=test_batch_size, shuffle=False
+    )
+    return data_train, data_test
+
+
+def load_user_item_graph_bert_embeddings(
+        train_ratings_filepath,
+        test_ratings_filepath,
+        bert_user_filepath,
+        bert_item_filepath,
+        sep='\t',
+        binary_adjacency=False,
+        sparse_adjacency=True,
+        shuffle=True,
+        train_batch_size=1024,
+        test_batch_size=2048
+):
+    """
+    Load train and test ratings for GNN-based models.
+    Note that the user and item IDs are converted to sequential numbers.
+
+    :param train_ratings_filepath: The training ratings CSV or TSV filepath.
+    :param test_ratings_filepath: The test ratings CSV or TSV filepath.
+    :param sep: The separator to use for CSV or TSV files.
+    :param binary_adjacency: Used only if return_adjacency is True. Whether to consider both positive and negative
+                             ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
+    :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
+                             matrix instead of dense.
+    :param shuffle: Tells if shuffle the training dataset.
+    :param train_batch_size: batch_size used in training phase.
+    :param test_batch_size: batch_size used in test phase.
+    :return: The training and test ratings data sequence for GNN-based models.
+    """
+    (train_ratings, test_ratings), adj_matrix = \
+        load_train_test_ratings(train_ratings_filepath,
+                                test_ratings_filepath,
+                                sep,
+                                return_adjacency=True,
+                                binary_adjacency=binary_adjacency,
+                                sparse_adjacency=sparse_adjacency)
+    bert_user_embeddings, bert_item_embeddings = \
+        load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
+
+    data_train = UserItemGraphBertEmbeddings(
+        train_ratings, adj_matrix, bert_user_embeddings, bert_item_embeddings,
+        batch_size=train_batch_size, shuffle=shuffle
+    )
+    data_test = UserItemGraphBertEmbeddings(
+        test_ratings, adj_matrix, bert_user_embeddings, bert_item_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test

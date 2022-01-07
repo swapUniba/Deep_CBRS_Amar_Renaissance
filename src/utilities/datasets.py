@@ -195,3 +195,46 @@ class UserItemGraph(keras.utils.Sequence):
             self.indexes = np.arange(len(self.ratings))
             self.random_state.shuffle(self.indexes)
 
+
+class UserItemGraphBertEmbeddings(keras.utils.Sequence):
+    def __init__(
+        self,
+        ratings,
+        adj_matrix,
+        bert_user_embeddings,
+        bert_item_embeddings,
+        batch_size=512,
+        shuffle=False,
+        seed=42,
+    ):
+        super().__init__()
+
+        # Set the ratings and the adjency matrix
+        self.ratings = ratings
+        self.adj_matrix = adj_matrix
+        # Set other settings
+        self.batch_size = batch_size
+        self.shuffle = shuffle
+        self.seed = seed
+        self.indexes = None
+        self.random_state = None
+        self.on_epoch_end()
+        self.user_embeddings = bert_user_embeddings
+        self.item_embeddings = bert_item_embeddings
+
+    def __getitem__(self, idx):
+        """
+        Get the i-th batch consisting of User-Item IDs and the rating.
+
+        :param idx: The index of the batch.
+        :return: A pair consisting of User-Item IDs and the ratings.
+        """
+        batch_idx = idx * self.batch_size
+        batch_off = min(batch_idx + self.batch_size, len(self.ratings))
+        if self.shuffle:
+            ratings = self.ratings[self.indexes[batch_idx:batch_off]]
+        else:
+            ratings = self.ratings[batch_idx:batch_off]
+        user_embeddings = self.user_embeddings[ratings[:, 0]]
+        item_embeddings = self.item_embeddings[ratings[:, 1]]
+        return (ratings[:, 0], ratings[:, 1]), (user_embeddings, item_embeddings), ratings[:, 2]
