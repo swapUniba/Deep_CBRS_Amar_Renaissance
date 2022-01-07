@@ -65,7 +65,7 @@ class SequentialGNN(models.Model):
 
     @property
     def n_hops(self):
-        return len(self.layers)
+        return len(self.seq_layers)
 
     def __len__(self):
         return self.n_hops
