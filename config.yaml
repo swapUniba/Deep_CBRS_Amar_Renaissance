@@ -44,7 +44,8 @@ parameters:
   epochs: 25
   optimizer:
     name: Adam
-    lr: 0.001
-    beta: 0.9
+    learning_rate: 0.001
+    # For Adam* optimizers only
+    beta_1: 0.9
   metrics: ['accuracy']
   loss: binary_crossentropy

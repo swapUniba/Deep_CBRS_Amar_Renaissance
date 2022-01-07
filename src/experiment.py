@@ -91,6 +91,7 @@ class Experimenter:
         self.trainset = None
         self.testset = None
         self.model = None
+        self.optimizer = None
         self.parameters = self.config.parameters
 
     def _retrieve_classes(self):
@@ -116,6 +117,12 @@ class Experimenter:
                       for k in self.config.dataset.keys() & init_parameters.keys()}
         self.trainset, self.testset = self.config.load_function(**parameters)
 
+    def build_optimizer(self):
+        init_parameters = inspect.signature(self.config.optimizer_class).parameters
+        parameters = {k: self.config.parameters.optimizer[k]
+                      for k in self.config.parameters.optimizer.keys() & init_parameters.keys()}
+        self.optimizer = self.config.optimizer_class(**parameters)
+
     def build_model(self):
         """
         Builds model from config parameters
@@ -128,15 +135,13 @@ class Experimenter:
         else:
             self.model = self.config.model_class(**self.config.model)
 
-        optimizer = self.config.optimizer_class(
-            learning_rate=self.parameters.optimizer.lr,
-            beta_1=self.parameters.optimizer.beta
-        )
+        # Compile the model
         self.model.compile(
             loss=self.parameters.loss,
-            optimizer=optimizer,
+            optimizer=self.optimizer,
             metrics=self.parameters.metrics
         )
+
         # One prediction is needed to build the model
         self.model(self.trainset[0][0])
         self.model.summary(print_fn=self.logger.info, expand_nested=True)
@@ -153,6 +158,7 @@ class Experimenter:
         self.logger.info("Experiment folder: " + self.config.dest)
 
         self.build_dataset()
+        self.build_optimizer()
         self.build_model()
 
         self.logger.info('Training:')
