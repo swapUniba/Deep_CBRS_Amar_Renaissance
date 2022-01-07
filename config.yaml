@@ -5,7 +5,7 @@ n_workers: 12
 seed: 42
 
 model:
-  name: gnn.BasicGCN
+  name: basic.BasicGCN
   embedding_dim: 16
   n_hiddens: !!python/tuple [16, 16, 16]
   l2_regularizer: 1e-4

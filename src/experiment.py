@@ -5,7 +5,8 @@ from time import strftime
 
 from utilities import data
 from utilities.utils import LogCallback, get_total_parameters, nested_dict_update, make_grid
-from models.gnn import BasicGNN
+from models.basic import BasicRS, BasicGNN
+from models.hybrid import HybridCBRS
 
 import tensorflow as tf
 import numpy as np
@@ -34,22 +35,24 @@ class Experimenter:
         """
         self.config = EasyDict(**config)
 
-        tf.random.set_seed(
-            self.config.seed
-        )
+        # Set the random seed
+        tf.random.set_seed(self.config.seed)
 
+        # Initialize the experiment name
         self.exp_name = \
             strftime("%m_%d-%H_%M") + '-' + \
             self.config.model.name
-        if 'gnn' in self.config.model.name:
-            self.exp_name = self.exp_name + '-' + \
-                str(self.config.model.l2_regularizer) + '-' + \
-                self.config.model.final_node
-        elif 'hybrid' in self.config.model.name:
+        if BasicRS.__name__ in self.config.model.name:
+            pass
+        elif HybridCBRS.__name__ in self.config.model.name:
             if self.config.model.feature_based:
                 self.exp_name = self.exp_name + '-' + 'feature'
             else:
                 self.exp_name = self.exp_name + '-' + 'entity'
+        else:  # GNN-based models
+            self.exp_name = self.exp_name + '-' + \
+                str(self.config.model.l2_regularizer) + '-' + \
+                self.config.model.final_node
         self.exp_name = self.exp_name + '-' + self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
