@@ -23,3 +23,37 @@ def sparse_matrix_to_tensor(x, dtype=tf.float32):
 
     # Some Tensorflow operations required an ordering of the sparse representation
     return tf.sparse.reorder(x)
+
+
+def get_ngrade_neighbors(adjacency_matrix, grade):
+    """
+    Builds an adjacency matrix connecting neighbors of "grade" hops
+
+    :param adjacency_matrix: a graph adjacency matrix
+    :param grade: distance we want to connect each node to another in the resulting adjacency matrix
+    :return: adjacency matrix of grade "grade"
+    """
+    adj = tf.cast(tf.not_equal(adjacency_matrix, 0), tf.int32)
+    result = tf.Variable(adj)
+
+    i = tf.constant(0)
+    condition = lambda i: tf.less(i, grade - 1)
+
+    def body(i):
+        result.assign(tf.matmul(result, adj, a_is_sparse=True, b_is_sparse=True))
+        return [tf.add(i, 1)]
+
+    _ = tf.while_loop(condition, body, [i])
+
+    return tf.cast(tf.not_equal(result, 0), tf.int32)
+
+
+def get_sub_adjacency_matrix(inputs, n_grade_adjacency):
+    """
+    Temp method to test
+    """
+    u, i = inputs
+    indices = tf.concat([u, i], 0)
+    items = tf.gather(n_grade_adjacency, indices)
+    neigh = tf.reduce_sum(items, axis=0)
+    tf.where(neigh == 1)

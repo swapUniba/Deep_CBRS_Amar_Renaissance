@@ -8,13 +8,14 @@ from spektral.layers import GATConv, GCNConv, GraphSageConv
 from models.basic import BasicRS
 from layers.lightgcn_conv import LightGCNConv
 from layers.reduction import ReductionLayer
-from utilities.math import sparse_matrix_to_tensor
+from utilities.math import sparse_matrix_to_tensor, get_ngrade_neighbors
 
 
 class BasicGNN(models.Model):
     def __init__(
         self,
         adj_matrix,
+        grade=None,
         embedding_dim=8,
         dropout=None,
         l2_regularizer=None,
@@ -28,6 +29,7 @@ class BasicGNN(models.Model):
         Initialize a Basic recommender system based on Graph Neural Networks (GCN).
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param grade: Distance from which every node will be convoluted to.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param dropout: The dropout to apply after each GCN layer. It can be None.
         :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
@@ -54,11 +56,14 @@ class BasicGNN(models.Model):
             regularizer=self.regularizer
         )
 
-        # Initialize the adjacency matrix constant parameter
+        # Initialize the adjacency matrix constant parameter and n grade neighbors matrix
         if sparse.issparse(adj_matrix):
+            dense_adj = adj_matrix.todense()
+            self.n_grade_adjacency = get_ngrade_neighbors(dense_adj, grade)
             self.adj_matrix = sparse_matrix_to_tensor(adj_matrix, dtype=tf.float32)
         else:
             self.adj_matrix = tf.convert_to_tensor(adj_matrix, dtype=tf.float32)
+            self.n_grade_adjacency = get_ngrade_neighbors(self.adj_matrix, grade)
 
         # Build the dropout layer
         self.dropout = layers.Dropout(dropout) if dropout else None
@@ -109,6 +114,8 @@ class BasicGCN(BasicGNN):
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
         """
+        # Distance from which every node will be convoluted to
+        kwargs['grade'] = len(n_hiddens)
         # Note normalizing the adjacency matrix using the GCN filter
         adj_matrix = GCNConv.preprocess(adj_matrix.astype(np.float32, copy=False))
         super().__init__(
@@ -142,6 +149,8 @@ class BasicGAT(BasicGNN):
         :param n_hiddens: A sequence of numbers of hidden units for each GAT layer.
         :param dropout_rate: The dropout rate to apply to the attention coefficients in GAT.
         """
+        # Distance from which every node will be convoluted to
+        kwargs['grade'] = len(n_hiddens)
         super().__init__(
             adj_matrix,
             **kwargs)
@@ -174,6 +183,9 @@ class BasicGraphSage(BasicGNN):
         :param n_hiddens: A sequence of numbers of hidden units for each GraphSage layer.
         :param aggregate: Which aggregation function to use in update (mean, max, ...)
         """
+
+        # Distance from which every node will be convoluted to
+        kwargs['grade'] = len(n_hiddens)
         super().__init__(
             adj_matrix,
             **kwargs)
@@ -206,7 +218,8 @@ class BasicLightGCN(BasicGNN):
         """
         # Override final_node parameter to 'mean'
         kwargs['final_node'] = 'mean'
-
+        # Distance from which every node will be convoluted to
+        kwargs['grade'] = n_layers
         # Note normalizing the adjacency matrix using the GCN filter
         adj_matrix = LightGCNConv.preprocess(adj_matrix.astype(np.float32, copy=False))
         super().__init__(
