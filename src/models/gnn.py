@@ -72,7 +72,7 @@ class BasicGNN(abc.ABC, models.Model):
                 adj_matrix = adj_matrix.todense()
             self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix, n_hops)
 
-        # Build GCN layers
+        # Build GNN layers
         self.gnn_layers = [self.build_gnn_layer(i) for i in range(n_hops)]
 
         # Build the dropout layer
