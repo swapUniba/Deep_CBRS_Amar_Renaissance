@@ -50,6 +50,7 @@ class SequentialGNN(models.Model):
 
         # Compute the n-grade adjacency matrix, if needed
         if self.cache_neighbours:
+            raise NotImplementedError("Multi-hops neighbours caching is not yet completely supported!")
             if sparse.issparse(adj_matrix):
                 adj_matrix = adj_matrix.todense()
             self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix, self.n_hops)
