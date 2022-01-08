@@ -300,6 +300,8 @@ def load_user_item_graph_bert_embeddings(
 
     :param train_ratings_filepath: The training ratings CSV or TSV filepath.
     :param test_ratings_filepath: The test ratings CSV or TSV filepath.
+    :param bert_user_filepath: The filepath for User BERT embeddings.
+    :param bert_item_filepath: The filepath for Item BERT embeddings.
     :param sep: The separator to use for CSV or TSV files.
     :param binary_adjacency: Used only if return_adjacency is True. Whether to consider both positive and negative
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
