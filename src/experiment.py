@@ -6,7 +6,7 @@ from time import strftime
 from utilities import data
 from utilities.utils import LogCallback, get_total_parameters, nested_dict_update, make_grid
 from models.basic import BasicRS, BasicGNN
-from models.hybrid import HybridCBRS, BertGNN
+from models.hybrid import HybridCBRS, HybridBertGNN
 
 import tensorflow as tf
 import numpy as np
@@ -133,7 +133,7 @@ class Experimenter:
         self.logger.info('Building model...')
 
         # Additional parameter for GNNs
-        if issubclass(self.config.model_class, BasicGNN) or issubclass(self.config.model_class, BertGNN):
+        if issubclass(self.config.model_class, BasicGNN) or issubclass(self.config.model_class, HybridBertGNN):
             self.model = self.config.model_class(self.trainset.adj_matrix, **self.config.model)
         else:
             self.model = self.config.model_class(**self.config.model)
