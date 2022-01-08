@@ -109,6 +109,12 @@ class HybridUserItemEmbeddings(utils.Sequence):
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
 
+    def get_users(self):
+        return self.graph_embeddings.get_users()
+
+    def get_items(self):
+        return self.graph_embeddings.get_items()
+
     def __len__(self):
         """
         Get the number of batches.
@@ -243,6 +249,12 @@ class UserItemGraphEmbeddings(utils.Sequence):
             ratings, embeddings,
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
+
+    def get_users(self):
+        return self.graph_ids.get_users()
+
+    def get_items(self):
+        return self.graph_ids.get_items()
 
     def __len__(self):
         """
