@@ -14,6 +14,12 @@ class BasicRS(models.Model):
         activation='relu',
         **kwargs
     ):
+        """
+        :param dense_units: Dense networks units for the Basic recommender system.
+        :param clf_units: Classifier network units for the Basic recommender system.
+        :param activation: The activation function to use.
+        :param **kwargs: Additional args not used.
+        """
         super().__init__()
         self.concat = layers.Concatenate()
         self.unet = build_dense_network(dense_units, activation=activation)
