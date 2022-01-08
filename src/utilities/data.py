@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy import sparse
 
-from utilities.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphBertEmbeddings
+from utilities.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphEmbeddings
 
 
 def load_train_test_ratings(
@@ -29,8 +29,8 @@ def load_train_test_ratings(
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
-             Moreover, it returns the users and items original unique IDs if return_adjacency is False,
-             otherwise it returns the training interactions adjacency matrix (assuming un-directed arcs).
+             Moreover, it returns the users and items original unique IDs. Additionally, it also returns the training
+             interactions adjacency matrix (assuming un-directed arcs).
     """
     # Load the ratings arrays
     train_ratings = pd.read_csv(train_filepath, sep=sep).to_numpy()
@@ -39,19 +39,17 @@ def load_train_test_ratings(
     # Convert users and items ids to indices (i.e. sequential)
     users, users_indexes = np.unique(train_ratings[:, 0], return_inverse=True)
     items, items_indexes = np.unique(train_ratings[:, 1], return_inverse=True)
+    items_indexes += len(users)
     train_ratings = np.stack([users_indexes, items_indexes, train_ratings[:, 2]], axis=1)
 
     # Do the same for the test ratings, by using the same users and items of the train ratings
     users_indexes = np.argwhere(test_ratings[:, [0]] == users)[:, 1]
     items_indexes = np.argwhere(test_ratings[:, [1]] == items)[:, 1]
+    items_indexes += len(users)
     test_ratings = np.stack([users_indexes, items_indexes, test_ratings[:, 2]], axis=1)
 
     if not return_adjacency:
         return (train_ratings, test_ratings), (users, items)
-
-    # Add a constant factors to item ids
-    train_ratings[:, 1] += len(users)
-    test_ratings[:, 1] += len(users)
 
     # Compute the dimensions of the adjacency matrix
     adj_size = len(users) + len(items)
@@ -75,7 +73,7 @@ def load_train_test_ratings(
             adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1.0
             adj_matrix += adj_matrix.T
 
-    return (train_ratings, test_ratings), adj_matrix
+    return (train_ratings, test_ratings), (users, items), adj_matrix
 
 
 def json_load_graph_embeddings(filepath):
@@ -93,7 +91,7 @@ def load_graph_user_item_embeddings(filepath, users, items):
     graph_embeddings = np.array(json_load_graph_embeddings(filepath), dtype=np.float32)
     user_embeddings = graph_embeddings[users]
     item_embeddings = graph_embeddings[items]
-    return user_embeddings, item_embeddings
+    return np.concatenate([user_embeddings, item_embeddings], axis=0)
 
 
 def load_bert_user_item_embeddings(user_filepath, item_filepath, users, items):
@@ -108,7 +106,7 @@ def load_bert_user_item_embeddings(user_filepath, item_filepath, users, items):
         item_embeddings[item_id] = np.array(item['embedding'], dtype=np.float32)
     user_embeddings = np.stack([user_embeddings[u] for u in users])
     item_embeddings = np.stack([item_embeddings[i] for i in items])
-    return user_embeddings, item_embeddings
+    return np.concatenate([user_embeddings, item_embeddings], axis=0)
 
 
 # Train, test load functions
@@ -140,15 +138,14 @@ def load_graph_embeddings(
                                 sep,
                                 return_adjacency=False)
 
-    graph_user_embeddings, graph_item_embeddings = \
-        load_graph_user_item_embeddings(graph_filepath, users, items)
+    graph_embeddings = load_graph_user_item_embeddings(graph_filepath, users, items)
 
     data_train = UserItemEmbeddings(
-        train_ratings, graph_user_embeddings, graph_item_embeddings,
+        train_ratings, graph_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemEmbeddings(
-        test_ratings, graph_user_embeddings, graph_item_embeddings,
+        test_ratings, graph_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -183,15 +180,14 @@ def load_bert_embeddings(
                                 sep,
                                 return_adjacency=False)
 
-    bert_user_embeddings, bert_item_embeddings = \
-        load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
+    bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
     data_train = UserItemEmbeddings(
-        train_ratings, bert_user_embeddings, bert_item_embeddings,
+        train_ratings, bert_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemEmbeddings(
-        test_ratings, bert_user_embeddings, bert_item_embeddings,
+        test_ratings, bert_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -228,18 +224,16 @@ def load_hybrid_embeddings(
                                 sep,
                                 return_adjacency=False)
 
-    graph_user_embeddings, graph_item_embeddings = \
-        load_graph_user_item_embeddings(graph_filepath, users, items)
-    bert_user_embeddings, bert_item_embeddings = \
-        load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
+    graph_embeddings = load_graph_user_item_embeddings(graph_filepath, users, items)
+    bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
     data_train = HybridUserItemEmbeddings(
-        train_ratings, graph_user_embeddings, graph_item_embeddings,
-        bert_user_embeddings, bert_item_embeddings, batch_size=train_batch_size, shuffle=shuffle
+        train_ratings, graph_embeddings, bert_embeddings,
+        batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = HybridUserItemEmbeddings(
-        test_ratings, graph_user_embeddings, graph_item_embeddings,
-        bert_user_embeddings, bert_item_embeddings, batch_size=test_batch_size, shuffle=False
+        test_ratings, graph_embeddings, bert_embeddings,
+        batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
 
@@ -270,7 +264,7 @@ def load_user_item_graph(
     :param test_batch_size: batch_size used in test phase.
     :return: The training and test ratings data sequence for GNN-based models.
     """
-    (train_ratings, test_ratings), adj_matrix = \
+    (train_ratings, test_ratings), _, adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
                                 sep,
@@ -316,22 +310,22 @@ def load_user_item_graph_bert_embeddings(
     :param test_batch_size: batch_size used in test phase.
     :return: The training and test ratings data sequence for GNN-based models.
     """
-    (train_ratings, test_ratings), adj_matrix = \
+    (train_ratings, test_ratings), (users, items), adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
                                 sep,
                                 return_adjacency=True,
                                 binary_adjacency=binary_adjacency,
                                 sparse_adjacency=sparse_adjacency)
-    bert_user_embeddings, bert_item_embeddings = \
-        load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
-    data_train = UserItemGraphBertEmbeddings(
-        train_ratings, adj_matrix, bert_user_embeddings, bert_item_embeddings,
+    bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
+
+    data_train = UserItemGraphEmbeddings(
+        train_ratings, adj_matrix, bert_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
-    data_test = UserItemGraphBertEmbeddings(
-        test_ratings, adj_matrix, bert_user_embeddings, bert_item_embeddings,
+    data_test = UserItemGraphEmbeddings(
+        test_ratings, adj_matrix, bert_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
