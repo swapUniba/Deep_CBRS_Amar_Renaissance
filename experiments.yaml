@@ -1,4 +1,10 @@
 grid:
   model:
-    name: [basic.BasicGCN, basic.BasicGAT, basic.BasicGraphSage]
-    l2_regularizer: [1e-5, 1e-4, 1e-3]
+    name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+  dataset:
+    load_function_name: [load_user_item_graph_bert_embeddings]
+
+#grid:
+#  model:
+#    name: [basic.BasicGCN, basic.BasicGAT, basic.BasicGraphSage]
+#    l2_regularizer: [1e-5, 1e-4, 1e-3]
