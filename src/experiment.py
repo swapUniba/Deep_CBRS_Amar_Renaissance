@@ -53,7 +53,8 @@ class Experimenter:
             self.exp_name = self.exp_name + '-' + \
                 str(self.config.model.l2_regularizer) + '-' + \
                 self.config.model.final_node
-        self.exp_name = self.exp_name + '-' + self.config.details
+        if self.config.details is not None and self.config.details != '':
+            self.exp_name = self.exp_name + '-' + self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
         os.makedirs(self.config.dest, exist_ok=True)
