@@ -4,7 +4,7 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities import data
-from utilities.utils import LogCallback, get_total_parameters, nested_dict_update, make_grid
+from utilities.utils import LogCallback, get_experiment_loggers, get_total_parameters, nested_dict_update, make_grid
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 
@@ -62,21 +62,11 @@ class Experimenter:
         with open(path_join(self.config.dest, "config.yaml"), 'w') as config_output:
             YAML().dump(config, config_output)
 
-        # Logging stuff
-        file_handler = logging.FileHandler(path_join(self.config.dest, 'log.txt'))
-        logging.basicConfig(
-            handlers=[
-                file_handler,
-            ],
-            format="%(asctime)s %(message)s",
-            datefmt='[%H:%M:%S]',
-            level=logging.INFO)
-        self.logger = logging.getLogger(self.exp_name)
-        self.logger.addHandler(logging.StreamHandler())
-        self.callback_logger = logging.getLogger(self.exp_name + '_callback')
-        self.logger.log(logging.INFO, 'CONFIG \n')
+        # Logging init
+        self.logger, self.callback_logger = get_experiment_loggers(self.exp_name, self.config.dest)
 
         # Print config
+        self.logger.log(logging.INFO, 'CONFIG \n')
         config_str = io.StringIO()
         YAML().dump(config, config_str)
         config_str = config_str.getvalue()
@@ -152,6 +142,7 @@ class Experimenter:
             trainable, non_trainable = get_total_parameters(self.model)
             tf.summary.scalar('trainable_params', trainable, step=0)
             tf.summary.scalar('non_trainable_params', non_trainable, step=0)
+            self.board_writer.flush()
 
     def train(self):
         """
@@ -198,14 +189,23 @@ class Experimenter:
                 tf.summary.scalar('precision_at', precision_at[k], step=k)
                 tf.summary.scalar('recall_at', recall_at[k], step=k)
                 tf.summary.scalar('f1_at', f1_at[k], step=k)
+        self.board_writer.close()
 
     def run(self):
         """
         Run a full experiment (train and evaluation)
-        :return:
         """
         self.train()
         self.evaluate()
+        self.close()
+
+    def close(self):
+        """
+        Close all streams
+        """
+        self.board_writer.close()
+        for handler in self.logger.handlers:
+            handler.close()
 
 
 class MultiExperimenter:

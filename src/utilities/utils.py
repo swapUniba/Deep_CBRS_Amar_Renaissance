@@ -1,6 +1,9 @@
+import logging
+import os
 import time
 from functools import reduce
 from itertools import groupby, product
+from logging import FileHandler, LogRecord
 
 import pandas as pd
 import csv
@@ -326,3 +329,33 @@ def make_grid(dict_of_list):
     grid_dict = list(dict(zip(keys, values_list)) for values_list in product(*values))
     # Delinearize the list of dicts
     return [delinearize(dictionary) for dictionary in grid_dict]
+
+
+class FlushFileHandler(FileHandler):
+    def emit(self, record: LogRecord) -> None:
+        super().emit(record)
+        self.flush()
+
+
+def get_experiment_loggers(exp_name, destination_folder):
+    """
+    Get the two loggers required for the Experimenter
+    :param exp_name: unique experiment name
+    :param destination_folder: folder where to save the log
+    :return: logger, callback_logger
+    """
+    file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
+    formatter = logging.Formatter('%(asctime)s %(message)s', '[%H:%M:%S]')
+    file_handler.setFormatter(formatter)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setFormatter(formatter)
+
+    logger = logging.getLogger(exp_name)
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+    logger.setLevel(logging.INFO)
+
+    callback_logger = logging.getLogger(exp_name + '_callback')
+    callback_logger.addHandler(file_handler)
+    callback_logger.setLevel(logging.INFO)
+    return logger, callback_logger
