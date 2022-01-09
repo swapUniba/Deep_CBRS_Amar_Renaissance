@@ -1,7 +1,7 @@
 grid:
   model:
     name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
-    dense_units: [[[512, 256, 128],[64, 32]]]
+    dense_units: [[[512, 256, 128],[512, 256, 128],[64, 32]], [[64, 64],[64, 64],[64, 32]],  [[64, 64],[512, 128, 64],[64, 32]]]
   dataset:
     load_function_name: [load_user_item_graph_bert_embeddings]
 
