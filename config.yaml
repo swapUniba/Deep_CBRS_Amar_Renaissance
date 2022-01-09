@@ -20,7 +20,7 @@ model:
   n_layers: 3
   # BasicRS and HybridCBRS
   dense_units: !!python/tuple [64, 32]
-  clf_units: !!python/tuple [32, 32]
+  clf_units: !!python/tuple [64, 64]
   # HybridCBRS
   feature_based: False
 
