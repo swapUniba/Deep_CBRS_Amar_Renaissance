@@ -34,10 +34,10 @@ class HybridCBRS(models.Model):
         self.concat = layers.Concatenate()
         self.dense1a = build_dense_network(dense_units[0], activation=activation)
         self.dense1b = build_dense_network(dense_units[0], activation=activation)
-        self.dense2a = build_dense_network(dense_units[0], activation=activation)
-        self.dense2b = build_dense_network(dense_units[0], activation=activation)
-        self.dense3a = build_dense_network(dense_units[1], activation=activation)
-        self.dense3b = build_dense_network(dense_units[1], activation=activation)
+        self.dense2a = build_dense_network(dense_units[1], activation=activation)
+        self.dense2b = build_dense_network(dense_units[1], activation=activation)
+        self.dense3a = build_dense_network(dense_units[2], activation=activation)
+        self.dense3b = build_dense_network(dense_units[2], activation=activation)
         self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
     def call(self, inputs, **kwargs):
