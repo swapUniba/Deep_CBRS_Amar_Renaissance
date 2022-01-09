@@ -14,7 +14,7 @@ class HybridCBRS(models.Model):
     def __init__(
             self,
             feature_based=False,
-            dense_units=((512, 256, 128), (64, 64)),
+            dense_units=((512, 256, 128), (512, 256, 128), (64, 64)),
             clf_units=(64, 64),
             activation='relu',
             **kwargs
@@ -24,8 +24,8 @@ class HybridCBRS(models.Model):
             ((UserGraph, ItemGraph), (UserBert, ItemBert))
             otherwise is based on entities:
             ((UserGraph, UserBert), (ItemGraph, ItemBert))
-        :param dense_units: Dense networks units for the Basic recommender system.
-        :param clf_units: Classifier network units for the Basic recommender system.
+        :param dense_units: Dense networks units for the Hybrid recommender system (for each branch).
+        :param clf_units: Classifier network units for the Hybrid recommender system.
         :param activation: The activation function to use.
         :param **kwargs: Additional args not used.
         """
