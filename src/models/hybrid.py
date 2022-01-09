@@ -13,7 +13,7 @@ class HybridCBRS(models.Model):
     """
     def __init__(
             self,
-            feature_based=False,
+            feature_based=True,
             dense_units=((512, 256, 128), (512, 256, 128), (64, 64)),
             clf_units=(64, 64),
             activation='relu',

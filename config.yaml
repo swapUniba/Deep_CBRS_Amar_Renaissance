@@ -22,7 +22,7 @@ model:
   dense_units: !!python/tuple [64, 32]
   clf_units: !!python/tuple [64, 64]
   # HybridCBRS
-  feature_based: False
+  feature_based: True
 
 dataset:
   load_function_name: load_user_item_graph
