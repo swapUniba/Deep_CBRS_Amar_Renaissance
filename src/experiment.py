@@ -27,7 +27,7 @@ PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
 LOG_FREQUENCY = 100
-METRICS_TOP_KS = [5, 10, 20]
+METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 setup_mlflow(MLFLOW_PATH)
 
