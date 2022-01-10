@@ -1,6 +1,5 @@
 dest: exp
 details: ''
-prediction_dest: predictions
 n_workers: 12
 seed: 42
 
