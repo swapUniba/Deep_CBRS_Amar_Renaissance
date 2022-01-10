@@ -7,7 +7,7 @@ seed: 42
 model:
   name: basic.BasicRS
   embedding_dim: 16
-  n_hiddens: !!python/tuple [16, 16, 16]
+  n_hiddens: [16, 16, 16]
   l2_regularizer: 1e-4
   # Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean)
   # It is overwritten to 'mean' in case of LightGCN
@@ -19,8 +19,8 @@ model:
   # LightGCN
   n_layers: 3
   # BasicRS and HybridCBRS
-  dense_units: !!python/tuple [512, 256, 128]
-  clf_units: !!python/tuple [64, 64]
+  dense_units: [512, 256, 128]
+  clf_units: [64, 64]
   # HybridCBRS
   feature_based: True
 
