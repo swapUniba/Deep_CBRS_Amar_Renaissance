@@ -97,26 +97,29 @@ class FlushFileHandler(FileHandler):
         self.flush()
 
 
-def setup_mlflow(artifact_path):
+def setup_mlflow(exp_name, mlflow_path):
     """
     """
     mlflow.tensorflow.autolog()
-    os.makedirs(artifact_path, exist_ok=True)
-    os.makedirs(os.path.join(artifact_path, '.trash'), exist_ok=True)
+    os.makedirs(mlflow_path, exist_ok=True)
+    os.makedirs(os.path.join(mlflow_path, '.trash'), exist_ok=True)
 
-    experiment = mlflow.get_experiment_by_name('SIS')
+    experiment = mlflow.get_experiment_by_name(exp_name)
     if not experiment:
-        exps = os.listdir(artifact_path)
+        exps = os.listdir(mlflow_path)
         exps.pop(exps.index('.trash'))
         if len(exps) == 0:
             exp_id = '0'
         else:
-            exp_id = str(max([int(exp) for exp in exps]))
+            exp_id = str(max([int(exp) for exp in exps]) + 1)
+        exp_path = mlflow_path + '/' + exp_id
         experiment_id = mlflow.create_experiment(
-            'SIS', artifact_location='file:' + artifact_path + '/' + exp_id)
+            exp_name, artifact_location='file:' + exp_path)
     else:
         experiment_id = experiment.experiment_id
+        exp_path = experiment.artifact_location.split(':')[1]
     mlflow.set_experiment(experiment_id=experiment_id)
+    return exp_path
 
 
 def mlflow_linearize(dictionary):

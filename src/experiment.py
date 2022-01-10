@@ -3,13 +3,13 @@ from easydict import EasyDict
 from os.path import join as path_join
 from time import strftime
 
-import data
 from utilities.utils import \
     get_experiment_loggers, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
+from data import loaders
 
 import tensorflow as tf
 import numpy as np
@@ -26,10 +26,11 @@ import mlflow
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
+MLFLOW_EXP_NAME = 'try'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-setup_mlflow(MLFLOW_PATH)
+EXP_PATH = setup_mlflow(MLFLOW_EXP_NAME, MLFLOW_PATH)
 
 
 class Experimenter:
@@ -64,7 +65,7 @@ class Experimenter:
         mlflow.start_run(run_name=self.exp_name)
         mlflow.log_params(mlflow_linearize(config))
 
-        self.config.dest = path_join(self.config.dest, self.exp_name)
+        self.config.dest = path_join(EXP_PATH, mlflow.active_run().info.run_id, 'artifacts')
         self.predictions_dest = path_join(self.config.dest, "predictions")
         os.makedirs(self.config.dest, exist_ok=True)
         os.makedirs(self.predictions_dest, exist_ok=True)
@@ -102,7 +103,7 @@ class Experimenter:
         model_module = getattr(model_package, model_module)
         self.config.model_class = getattr(model_module, model_class)
 
-        self.config.load_function = getattr(data.loaders, self.config.dataset.load_function_name)
+        self.config.load_function = getattr(loaders, self.config.dataset.load_function_name)
 
     def build_dataset(self):
         """
