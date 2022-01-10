@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import groupby, product
 from logging import FileHandler, LogRecord
 
+import mlflow
 import pandas as pd
 import csv
 import numpy as np
@@ -192,7 +193,7 @@ def top_scores(predictions, n):
 
 
 class LogCallback(keras.callbacks.Callback):
-    def __init__(self, log, writer, frequency):
+    def __init__(self, log, frequency):
         """
 
         :param log: log object
@@ -201,7 +202,6 @@ class LogCallback(keras.callbacks.Callback):
         """
         super().__init__()
         self.log = log
-        self.writer = writer
         self.log_frequency = frequency
         self.train_start = None
 
@@ -211,8 +211,7 @@ class LogCallback(keras.callbacks.Callback):
         self.log.info("Starting training - got log keys: {}".format(keys))
 
     def on_train_end(self, logs=None):
-        with self.writer.as_default():
-            tf.summary.scalar('train_time', time.perf_counter() - self.train_start, step=0)
+        # tf.summary.scalar('train_time', time.perf_counter() - self.train_start, step=0)
         self.log.info("End training")
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -269,6 +268,22 @@ def nested_dict_update(d, u):
         else:
             d[k] = v
     return d
+
+
+def mlflow_linearize(dictionary):
+    """
+    Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording
+    :param dictionary: nested dict
+    :return: one level dict
+    """
+    exps = {}
+    for key, value in dictionary.items():
+        if isinstance(value, collections.abc.Mapping):
+            exps = {**exps,
+                    **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
+        else:
+            exps[key] = value
+    return exps
 
 
 def linearize(dictionary):
@@ -337,11 +352,12 @@ class FlushFileHandler(FileHandler):
         self.flush()
 
 
-def get_experiment_loggers(exp_name, destination_folder):
+def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     """
     Get the two loggers required for the Experimenter
     :param exp_name: unique experiment name
     :param destination_folder: folder where to save the log
+    :param mlflow_logger: add FileHandler to mlflow logger
     :return: logger, callback_logger
     """
     file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
@@ -350,12 +366,35 @@ def get_experiment_loggers(exp_name, destination_folder):
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
 
-    logger = logging.getLogger(exp_name)
+    logger = mlflow_logger
     logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
+    # logger.addHandler(stream_handler)
     logger.setLevel(logging.INFO)
 
     callback_logger = logging.getLogger(exp_name + '_callback')
     callback_logger.addHandler(file_handler)
     callback_logger.setLevel(logging.INFO)
     return logger, callback_logger
+
+
+def setup_mlflow(artifact_path):
+    """
+
+    """
+    mlflow.tensorflow.autolog()
+    os.makedirs(artifact_path, exist_ok=True)
+    os.makedirs(os.path.join(artifact_path, '.trash'), exist_ok=True)
+
+    experiment = mlflow.get_experiment_by_name('SIS')
+    if not experiment:
+        exps = os.listdir(artifact_path)
+        exps.pop(exps.index('.trash'))
+        if len(exps) == 0:
+            exp_id = '0'
+        else:
+            exp_id = str(max([int(exp) for exp in exps]))
+        experiment_id = mlflow.create_experiment(
+            'SIS', artifact_location='file:' + artifact_path + '/' + exp_id)
+    else:
+        experiment_id = experiment.experiment_id
+    mlflow.set_experiment(experiment_id=experiment_id)

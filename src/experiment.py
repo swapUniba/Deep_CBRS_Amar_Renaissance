@@ -4,7 +4,9 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities import data
-from utilities.utils import LogCallback, get_experiment_loggers, get_total_parameters, nested_dict_update, make_grid
+from utilities.utils import\
+    LogCallback, get_experiment_loggers, get_total_parameters, \
+    nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
@@ -18,12 +20,16 @@ import models
 import inspect
 import os
 import io
+import mlflow
+
 
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
+MLFLOW_PATH = './mlruns'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10, 20]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+setup_mlflow(MLFLOW_PATH)
 
 
 class Experimenter:
@@ -34,7 +40,6 @@ class Experimenter:
         :param config: dict of configuration parameters
         """
         self.config = EasyDict(**config)
-
         # Set the random seed
         tf.random.set_seed(self.config.seed)
 
@@ -53,8 +58,11 @@ class Experimenter:
             self.exp_name = self.exp_name + '-' + \
                 str(self.config.model.l2_regularizer) + '-' + \
                 self.config.model.final_node
+
         if self.config.details is not None and self.config.details != '':
             self.exp_name = self.exp_name + '-' + self.config.details
+        mlflow.start_run(run_name=self.exp_name)
+        mlflow.log_params(mlflow_linearize(config))
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
         self.predictions_dest = path_join(self.config.dest, "predictions")
@@ -66,7 +74,7 @@ class Experimenter:
             YAML().dump(config, config_output)
 
         # Logging init
-        self.logger, self.callback_logger = get_experiment_loggers(self.exp_name, self.config.dest)
+        self.logger, self.callback_logger = get_experiment_loggers(self.exp_name, self.config.dest, mlflow.utils._logger)
 
         # Print config
         self.logger.log(logging.INFO, 'CONFIG \n')
@@ -80,8 +88,6 @@ class Experimenter:
             log_dir=self.config.dest,
             histogram_freq=LOG_FREQUENCY,
             profile_batch='500,520')
-        self.board_writer = tf.summary.create_file_writer(self.config.dest + "/metrics")
-        self.board_writer.set_as_default()
 
         self._retrieve_classes()
         self.trainset = None
@@ -141,11 +147,8 @@ class Experimenter:
         # One prediction is needed to build the model
         self.model(self.trainset[0][0])
         self.model.summary(print_fn=self.logger.info, expand_nested=True)
-        with self.board_writer.as_default():
-            trainable, non_trainable = get_total_parameters(self.model)
-            tf.summary.scalar('trainable_params', trainable, step=0)
-            tf.summary.scalar('non_trainable_params', non_trainable, step=0)
-            self.board_writer.flush()
+        trainable, non_trainable = get_total_parameters(self.model)
+        mlflow.log_metrics({'trainable_params': trainable, 'non_trainable_params': non_trainable})
 
     def train(self):
         """
@@ -163,7 +166,7 @@ class Experimenter:
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[self.tensorboard, LogCallback(self.callback_logger, self.board_writer, LOG_FREQUENCY)])
+            callbacks=[self.tensorboard, LogCallback(self.callback_logger, LOG_FREQUENCY)])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
@@ -181,6 +184,8 @@ class Experimenter:
         predictions = self.model.predict(self.testset)
         ratings_pred = np.concatenate([self.testset.ratings[:, [0, 1]], predictions], axis=1)
         precision_at, recall_at, f1_at = {}, {}, {}
+
+        # Compute and log metrics @K
         for k in METRICS_TOP_KS:
             # Compute the top predictions and save them to file
             top_predictions = top_k_predictions(ratings_pred, self.trainset.users, self.trainset.items, k=k)
@@ -194,13 +199,15 @@ class Experimenter:
             results = results.drop(0, axis=1).to_numpy().squeeze()
             precision_at[k], recall_at[k], f1_at[k] = results[0], results[1], results[2]
 
-        # Write metrics to tensorboard
-        with self.board_writer.as_default():
-            for k in METRICS_TOP_KS:
-                tf.summary.scalar('precision_at', precision_at[k], step=k)
-                tf.summary.scalar('recall_at', recall_at[k], step=k)
-                tf.summary.scalar('f1_at', f1_at[k], step=k)
-        self.board_writer.close()
+            # Log metrics using MLFlow
+            mlflow.log_metrics({"precision_at_{}".format(k): precision_at[k],
+                                "recall_at_{}".format(k): recall_at[k],
+                                "f1_at_{}".format(k): f1_at[k]
+                                })
+
+        # Save metrics also in raw log
+        metrics = pd.DataFrame([precision_at, recall_at, f1_at], index=['precision_at', 'recall_at', 'f1_at'])
+        self.logger.info('\n' + str(metrics))
 
     def run(self):
         """
@@ -214,9 +221,9 @@ class Experimenter:
         """
         Close all streams
         """
-        self.board_writer.close()
         for handler in self.logger.handlers:
             handler.close()
+        mlflow.end_run()
 
 
 class MultiExperimenter:
