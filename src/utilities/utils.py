@@ -377,20 +377,21 @@ def setup_mlflow(artifact_path):
         experiment_id = experiment.experiment_id
     mlflow.set_experiment(experiment_id=experiment_id)
 
-    def mlflow_linearize(dictionary):
-        """
-        Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording
-        :param dictionary: nested dict
-        :return: one level dict
-        """
-        exps = {}
-        for key, value in dictionary.items():
-            if isinstance(value, collections.abc.Mapping):
-                exps = {**exps,
-                        **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
-            else:
-                exps[key] = value
-        return exps
+
+def mlflow_linearize(dictionary):
+    """
+    Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording
+    :param dictionary: nested dict
+    :return: one level dict
+    """
+    exps = {}
+    for key, value in dictionary.items():
+        if isinstance(value, collections.abc.Mapping):
+            exps = {**exps,
+                    **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
+        else:
+            exps[key] = value
+    return exps
 
 
 def get_experiment_loggers(exp_name, destination_folder):
