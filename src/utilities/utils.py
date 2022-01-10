@@ -217,6 +217,7 @@ class LogCallback(keras.callbacks.Callback):
 
     def on_train_end(self, logs=None):
         mlflow.log_metric('batch_time', self.get_batch_time())
+        mlflow.log_metric('training_time', time.perf_counter() - self.train_start)
         self.log.info("End training")
 
     def on_epoch_begin(self, epoch, logs=None):
