@@ -193,7 +193,7 @@ def top_scores(predictions, n):
 
 
 class LogCallback(keras.callbacks.Callback):
-    def __init__(self, log, frequency):
+    def __init__(self, log, frequency, batch_slice=(500, 520)):
         """
 
         :param log: log object
@@ -201,7 +201,12 @@ class LogCallback(keras.callbacks.Callback):
         :param frequency: frequency of logging batches (too much frequency will slow down the process)
         """
         super().__init__()
+        self.trace = False
+        self.trace_finished = False
+        self._batch_start_time = None
+        self.batch_slice = batch_slice
         self.log = log
+        self.batch_times = []
         self.log_frequency = frequency
         self.train_start = None
 
@@ -211,7 +216,7 @@ class LogCallback(keras.callbacks.Callback):
         self.log.info("Starting training - got log keys: {}".format(keys))
 
     def on_train_end(self, logs=None):
-        # tf.summary.scalar('train_time', time.perf_counter() - self.train_start, step=0)
+        mlflow.log_metric('batch_time', self.get_batch_time())
         self.log.info("End training")
 
     def on_epoch_begin(self, epoch, logs=None):
@@ -229,10 +234,25 @@ class LogCallback(keras.callbacks.Callback):
         keys = list(logs.keys())
         self.log.info("Stop testing; got log keys: {}".format(keys))
 
-    # def on_train_batch_end(self, batch, logs=None):
-    #     if batch % self.log_frequency == 0:
-    #         msg = reduce(lambda a, b: a + b, ["{}: {},\t".format(key, value) for key, value in logs.items()])
-    #         self.log.info("Batch {} \t - {}".format(batch, msg))
+    def on_train_batch_begin(self, batch, logs=None):
+        if not self.trace_finished:
+            if self.trace or \
+                    (self.batch_slice[0] <= batch <= self.batch_slice[1]):
+                self._batch_start_time = time.time()
+                self.trace = True
+            elif batch > self.batch_slice[1]:
+                self.trace_finished = False
+                self.trace = False
+
+    def on_train_batch_end(self, batch, logs=None):
+        if self.trace:
+            batch_run_time = time.time() - self._batch_start_time
+            self.batch_times.append(
+                1. / batch_run_time
+            )
+
+    def get_batch_time(self):
+        return np.mean(self.batch_times)
 
     def on_test_batch_end(self, batch, logs=None):
         if batch % self.log_frequency == 0:
@@ -268,22 +288,6 @@ def nested_dict_update(d, u):
         else:
             d[k] = v
     return d
-
-
-def mlflow_linearize(dictionary):
-    """
-    Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording
-    :param dictionary: nested dict
-    :return: one level dict
-    """
-    exps = {}
-    for key, value in dictionary.items():
-        if isinstance(value, collections.abc.Mapping):
-            exps = {**exps,
-                    **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
-        else:
-            exps[key] = value
-    return exps
 
 
 def linearize(dictionary):
@@ -352,12 +356,11 @@ class FlushFileHandler(FileHandler):
         self.flush()
 
 
-def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
+def get_experiment_loggers(exp_name, destination_folder):
     """
     Get the two loggers required for the Experimenter
     :param exp_name: unique experiment name
     :param destination_folder: folder where to save the log
-    :param mlflow_logger: add FileHandler to mlflow logger
     :return: logger, callback_logger
     """
     file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
@@ -366,35 +369,12 @@ def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
 
-    logger = mlflow_logger
+    logger = logging.getLogger(exp_name)
     logger.addHandler(file_handler)
-    # logger.addHandler(stream_handler)
+    logger.addHandler(stream_handler)
     logger.setLevel(logging.INFO)
 
     callback_logger = logging.getLogger(exp_name + '_callback')
     callback_logger.addHandler(file_handler)
     callback_logger.setLevel(logging.INFO)
     return logger, callback_logger
-
-
-def setup_mlflow(artifact_path):
-    """
-
-    """
-    mlflow.tensorflow.autolog()
-    os.makedirs(artifact_path, exist_ok=True)
-    os.makedirs(os.path.join(artifact_path, '.trash'), exist_ok=True)
-
-    experiment = mlflow.get_experiment_by_name('SIS')
-    if not experiment:
-        exps = os.listdir(artifact_path)
-        exps.pop(exps.index('.trash'))
-        if len(exps) == 0:
-            exp_id = '0'
-        else:
-            exp_id = str(max([int(exp) for exp in exps]))
-        experiment_id = mlflow.create_experiment(
-            'SIS', artifact_location='file:' + artifact_path + '/' + exp_id)
-    else:
-        experiment_id = experiment.experiment_id
-    mlflow.set_experiment(experiment_id=experiment_id)
