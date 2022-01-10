@@ -224,6 +224,7 @@ class LogCallback(keras.callbacks.Callback):
 
     def on_epoch_end(self, epoch, logs=None):
         msg = reduce(lambda a, b: a + b, ["{}: {},\t".format(key, value) for key, value in logs.items()])
+        mlflow.log_metrics(logs, step=epoch)
         self.log.info("End epoch {} of training - {}".format(epoch, msg))
 
     def on_test_begin(self, logs=None):
@@ -246,7 +247,7 @@ class LogCallback(keras.callbacks.Callback):
 
     def on_train_batch_end(self, batch, logs=None):
         if self.trace:
-            batch_run_time = time.time() - self._batch_start_time
+            batch_run_time = time.perf_counter() - self._batch_start_time
             self.batch_times.append(
                 1. / batch_run_time
             )
@@ -394,22 +395,21 @@ def mlflow_linearize(dictionary):
     return exps
 
 
-def get_experiment_loggers(exp_name, destination_folder):
+def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     """
     Get the two loggers required for the Experimenter
     :param exp_name: unique experiment name
     :param destination_folder: folder where to save the log
     :return: logger, callback_logger
     """
+    logger = mlflow_logger
     file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
     formatter = logging.Formatter('%(asctime)s %(message)s', '[%H:%M:%S]')
     file_handler.setFormatter(formatter)
     stream_handler = logging.StreamHandler()
     stream_handler.setFormatter(formatter)
 
-    logger = logging.getLogger(exp_name)
     logger.addHandler(file_handler)
-    logger.addHandler(stream_handler)
     logger.setLevel(logging.INFO)
 
     callback_logger = logging.getLogger(exp_name + '_callback')

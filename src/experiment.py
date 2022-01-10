@@ -83,11 +83,6 @@ class Experimenter:
         config_str = config_str.getvalue()
         self.logger.info('CONFIG')
         self.logger.info(config_str)
-        # Tensorboard
-        self.tensorboard = tf.keras.callbacks.TensorBoard(
-            log_dir=self.config.dest,
-            histogram_freq=LOG_FREQUENCY,
-            profile_batch='500,520')
 
         self._retrieve_classes()
         self.trainset = None
@@ -166,7 +161,7 @@ class Experimenter:
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[self.tensorboard, LogCallback(self.callback_logger, LOG_FREQUENCY)])
+            callbacks=[LogCallback(self.callback_logger, LOG_FREQUENCY)])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
@@ -178,7 +173,7 @@ class Experimenter:
         """
         Evaluates the trained model
         """
-        self.model.evaluate(self.testset, callbacks=[self.tensorboard])
+        self.model.evaluate(self.testset)
 
         # Compute Precision, Recall and F1 @K metrics
         predictions = self.model.predict(self.testset)
