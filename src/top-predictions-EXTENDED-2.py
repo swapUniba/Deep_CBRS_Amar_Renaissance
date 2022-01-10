@@ -7,7 +7,8 @@ from tensorflow import keras
 from numpy import loadtxt
 from keras.models import Sequential
 from keras.layers import Dense
-from utilities.utils import read_ratings,read_graph_embeddings,read_bert_embedding,top_scores,matching_Bert_Graph
+from utilities.utils import top_scores
+from data.match import matching_Bert_Graph, read_ratings, read_bert_embedding, read_graph_embeddings
 import logging
 import sys
 

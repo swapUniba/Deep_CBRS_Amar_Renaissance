@@ -3,10 +3,10 @@ from easydict import EasyDict
 from os.path import join as path_join
 from time import strftime
 
-from utilities import data
-from utilities.utils import\
-    LogCallback, get_experiment_loggers, get_total_parameters, \
-    nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
+import data
+from utilities.utils import \
+    get_experiment_loggers, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
+from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
@@ -102,7 +102,7 @@ class Experimenter:
         model_module = getattr(model_package, model_module)
         self.config.model_class = getattr(model_module, model_class)
 
-        self.config.load_function = getattr(data, self.config.dataset.load_function_name)
+        self.config.load_function = getattr(data.loaders, self.config.dataset.load_function_name)
 
     def build_dataset(self):
         """

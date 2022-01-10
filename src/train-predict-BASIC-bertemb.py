@@ -1,4 +1,4 @@
-from utilities.utils import read_bert_embeddings,read_ratings,matching_bert_emb_id
+from data.match import matching_bert_emb_id, read_ratings, read_bert_embeddings
 from models.model1 import run_model
 import pandas as pd
 import numpy as np

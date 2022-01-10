@@ -6,7 +6,7 @@ import numpy as np
 
 from scipy import sparse
 
-from utilities.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphEmbeddings
+from data.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphEmbeddings
 
 
 def load_train_test_ratings(

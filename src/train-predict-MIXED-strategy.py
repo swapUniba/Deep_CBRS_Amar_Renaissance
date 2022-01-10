@@ -4,7 +4,7 @@ from numpy import loadtxt
 from keras.models import Sequential
 from keras.layers import Dense
 import os
-from utilities.utils import read_ratings,read_graph_embeddings,read_bert_embedding,matching_Bert_Graph
+from data.match import matching_Bert_Graph, read_ratings, read_bert_embedding, read_graph_embeddings
 from models.model2_conf2_strategy import run_model
 import logging
 import sys

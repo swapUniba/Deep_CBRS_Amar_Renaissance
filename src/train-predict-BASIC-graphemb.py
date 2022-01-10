@@ -1,4 +1,5 @@
-from utilities.utils import read_graph_embeddings, read_ratings, matching_graph_emb_id, top_scores
+from utilities.utils import top_scores
+from data.match import matching_graph_emb_id, read_ratings, read_graph_embeddings
 from models.model1 import run_model
 import pandas as pd
 import numpy as np

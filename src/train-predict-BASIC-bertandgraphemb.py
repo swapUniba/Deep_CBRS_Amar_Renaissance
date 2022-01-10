@@ -1,4 +1,6 @@
-from utilities.utils import read_ratings,read_graph_embeddings,read_bert_embedding,matching_userBert_itemGraph,matching_userGraph_itemBert,top_scores
+from utilities.utils import top_scores
+from data.match import matching_userBert_itemGraph, matching_userGraph_itemBert, read_ratings, read_bert_embedding, \
+	read_graph_embeddings
 from models.model1 import run_model
 import logging
 import sys
