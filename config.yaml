@@ -19,7 +19,7 @@ model:
   # LightGCN
   n_layers: 3
   # BasicRS and HybridCBRS
-  dense_units: !!python/tuple [64, 32]
+  dense_units: !!python/tuple [512, 256, 128]
   clf_units: !!python/tuple [64, 64]
   # HybridCBRS
   feature_based: True
