@@ -1,11 +1,8 @@
 grid:
   model:
-    name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
-    dense_units: [[[512, 256, 128],[512, 256, 128],[64, 32]], [[64, 64],[64, 64],[64, 32]],  [[64, 64],[512, 128, 64],[64, 32]]]
+    name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN]
+    l2_regularizer: [1e-5, 1e-4, 1e-3]
+    dense_units: [[64, 64]]
+    clf_units: [[64, 64]]
   dataset:
-    load_function_name: [load_user_item_graph_bert_embeddings]
-
-#grid:
-#  model:
-#    name: [basic.BasicGCN, basic.BasicGAT, basic.BasicGraphSage]
-#    l2_regularizer: [1e-5, 1e-4, 1e-3]
+    load_function_name: [load_user_item_graph]
