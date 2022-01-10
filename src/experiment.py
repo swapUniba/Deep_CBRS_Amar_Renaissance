@@ -5,7 +5,8 @@ from time import strftime
 
 from utilities import data
 from utilities.utils import\
-    LogCallback, get_experiment_loggers, get_total_parameters, nested_dict_update, make_grid, mlflow_linearize
+    LogCallback, get_experiment_loggers, get_total_parameters, \
+    nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 
@@ -25,9 +26,10 @@ from utilities.metrics import top_k_metrics
 
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
+MLFLOW_PATH = './mlruns'
 LOG_FREQUENCY = 100
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-mlflow.tensorflow.autolog()
+setup_mlflow(MLFLOW_PATH)
 
 
 class Experimenter:

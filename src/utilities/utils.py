@@ -5,6 +5,7 @@ from functools import reduce
 from itertools import groupby, product
 from logging import FileHandler, LogRecord
 
+import mlflow
 import pandas as pd
 import csv
 import numpy as np
@@ -278,7 +279,8 @@ def mlflow_linearize(dictionary):
     exps = {}
     for key, value in dictionary.items():
         if isinstance(value, collections.abc.Mapping):
-            exps = {**exps, **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
+            exps = {**exps,
+                    **{key + '.' + lin_key: lin_value for lin_key, lin_value in mlflow_linearize(value).items()}}
         else:
             exps[key] = value
     return exps
@@ -373,3 +375,26 @@ def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     callback_logger.addHandler(file_handler)
     callback_logger.setLevel(logging.INFO)
     return logger, callback_logger
+
+
+def setup_mlflow(artifact_path):
+    """
+
+    """
+    mlflow.tensorflow.autolog()
+    os.makedirs(artifact_path, exist_ok=True)
+    os.makedirs(os.path.join(artifact_path, '.trash'), exist_ok=True)
+
+    experiment = mlflow.get_experiment_by_name('SIS')
+    if not experiment:
+        exps = os.listdir(artifact_path)
+        exps.pop(exps.index('.trash'))
+        if len(exps) == 0:
+            exp_id = '0'
+        else:
+            exp_id = str(max([int(exp) for exp in exps]))
+        experiment_id = mlflow.create_experiment(
+            'SIS', artifact_location='file:' + artifact_path + '/' + exp_id)
+    else:
+        experiment_id = experiment.experiment_id
+    mlflow.set_experiment(experiment_id=experiment_id)
