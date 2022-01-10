@@ -1,58 +1,71 @@
+import os
+import subprocess
+import logging
 import numpy as np
+import pandas as pd
+
+logging.basicConfig(format="%(message)s", level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
-def top_k_metrics(ratings_true, ratings_pred, k=5):
-    """
-    Compute the macro-averaged Precision, Recall and F1 metrics @K.
-
-    :param ratings_true: The actual ratings as an array of User-Item-Rating.
-    :param ratings_pred: The predicted ratings as an array of User-Item-Rating.
-    :param k: The K parameter.
-    :return: Precision, Recall and F1 @K.
-    """
-    precisions, recalls = list(), list()
-    user_indices = np.unique(ratings_true[:, 0])
-    for user_idx in user_indices:
-        user_mask = ratings_true[:, 0] == user_idx
-        user_ratings_true = ratings_true[user_mask]
-        user_ratings_pred = ratings_pred[user_mask]
-
-        item_true_mask = user_ratings_true[:, 2] == 1
-        items_true = user_ratings_true[item_true_mask, 1]
-
-        relevant_idx = np.argsort(-user_ratings_pred[:, 2])
-        relevant_items = user_ratings_pred[relevant_idx, 1]
-        if k <= len(relevant_items):
-            relevant_items = relevant_items[:k]
-
-        prec = rec = 0.0
-        items_true = set(items_true)
-        relevant_items = set(relevant_items)
-        if relevant_items:
-            prec = len(items_true & relevant_items) / len(relevant_items)
-        if items_true:
-            rec = len(items_true & relevant_items) / len(items_true)
-
-        precisions.append(prec)
-        recalls.append(rec)
-
-    precision, recall = np.mean(precisions), np.mean(recalls)
-    f1 = 2.0 * precision * recall / (precision + recall)
-    return precision, recall, f1
-
-
-def top_predictions(predictions, user_ids, item_ids, k=5):
+def top_k_predictions(predictions, users, items, k=5):
     """
     Compute the Top-K suggested items for each user, given prediction scores.
 
-    :param predictions: The prediction scores as an array that associate to each user and item a score between 0 and 1.
-    :param user_ids: An array of user ids.
-    :param item_ids: An array of item ids.
+    :param predictions: The prediction scores of users and items.
+    :param users: The original users identifiers.
+    :param items: The original items identifiers.
     :param k: The K parameter.
-    :return: An array that associate to each user a sequence of K suggested items.
+    :return: The top K predictions Pandas data frame, with the original users and items identifiers.
     """
-    predictions = predictions.reshape(len(user_ids), len(item_ids))
-    sort_idx = np.argsort(-predictions, axis=1)
-    item_ids = np.tile(item_ids, reps=(len(user_ids), 1))
-    user_idx = np.expand_dims(np.arange(len(user_ids)), axis=1)
-    return item_ids[user_idx, sort_idx][:, :k]
+    # Build the predictions data frame
+    # Note mapping user and item ids back to their identifiers
+    df = pd.DataFrame()
+    df['users'] = users[predictions[:, 0].astype(np.int64)]
+    df['items'] = items[predictions[:, 1].astype(np.int64) - len(users)]
+    df['scores'] = predictions[:, 2]
+    predictions = df.sort_values(by=['users', 'scores'], ascending=[True, False])
+
+    # Compute the top K predictions based on scores
+    top_k_scores = pd.DataFrame()
+    for u in set(predictions['users']):
+        p = predictions.loc[predictions['users'] == u]
+        top_k_scores = top_k_scores.append(p.head(k))
+    return top_k_scores
+
+
+def top_k_metrics(test_filepath, predictions_path):
+    try:
+        if not os.path.isdir(predictions_path):
+            raise RuntimeError("Invalid predictions path specified. Unable to run evaluator.")
+
+        for root, dirs, files in os.walk(predictions_path):
+            filtered_files = list(filter(lambda x: x.startswith("predictions"), files))
+            print(filtered_files)
+            num_filtered_files = len(filtered_files)
+            print(num_filtered_files)
+            if num_filtered_files == 1:
+                cutoff = str(root)[root.rfind(os.sep):].split("_")[1]
+                print(cutoff)
+                results_filename = os.sep.join([root, "results.tsv"])
+                mimir_output = subprocess.call(["java", "-jar", "binaries/mimir.jar",
+                                                "-holdout",
+                                                "-cutoff", cutoff,
+                                                "-test", test_filepath,
+                                                "-predictions", os.sep.join([root, files[0]]),
+                                                "-results", results_filename])
+                logger.info(mimir_output)
+            elif num_filtered_files > 1:
+                cutoff = str(root)[root.rfind(os.sep):].split("_")[1]
+                results_filename = os.sep.join([root, "results.tsv"])
+                mimir_output = subprocess.call(["java", "-jar", "binaries/mimir.jar",
+                                                "-cv",
+                                                "-folds",
+                                                str(num_filtered_files),
+                                                "-cutoff", cutoff,
+                                                "-test", test_filepath,
+                                                "-predictions", os.sep.join([root, "predictions_%s.tsv"]),
+                                                "-results", results_filename])
+                logger.info(mimir_output)
+    except RuntimeError as e:
+        logger.exception(e)

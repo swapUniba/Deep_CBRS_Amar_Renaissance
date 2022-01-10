@@ -6,6 +6,8 @@ class UserItemEmbeddings(utils.Sequence):
     def __init__(
         self,
         ratings,
+        users,
+        items,
         embeddings,
         batch_size=512,
         shuffle=False,
@@ -15,15 +17,17 @@ class UserItemEmbeddings(utils.Sequence):
         Initialize a sequence of User-Item embeddings.
 
         :param ratings: A numpy array of triples (UserID, ItemID, Rating).
+        :param users: The original users identifiers.
+        :param items: The original items identifiers.
         :param embeddings: A numpy array that maps UserID and ItemID to embeddings.
         :param batch_size: The batch size.
         :param shuffle: Whether to shuffle the sequence.
         :param seed: The seed value used to shuffle the sequence.
         """
         super().__init__()
-
-        # Set the ratings and the embeddings
         self.ratings = ratings
+        self.users = users
+        self.items = items
         self.embeddings = embeddings
 
         # Set other settings
@@ -33,12 +37,6 @@ class UserItemEmbeddings(utils.Sequence):
         self.indexes = None
         self.random_state = None
         self.on_epoch_end()
-
-    def get_users(self):
-        return np.unique(self.ratings[:, 0])
-
-    def get_items(self):
-        return np.unique(self.ratings[:, 1])
 
     def __len__(self):
         """
@@ -80,6 +78,8 @@ class HybridUserItemEmbeddings(utils.Sequence):
     def __init__(
         self,
         ratings,
+        users,
+        items,
         graph_embeddings,
         bert_embeddings,
         batch_size=512,
@@ -90,30 +90,28 @@ class HybridUserItemEmbeddings(utils.Sequence):
         Initialize a sequence of Hybrid (Graph+BERT) User-Item embeddings.
 
         :param ratings: A numpy array of triples (UserID, ItemID, Rating).
+        :param users: The original users identifiers.
+        :param items: The original items identifiers.
         :param graph_embeddings: A numpy array that maps UserID and ItemID to Graph embeddings.
         :param bert_embeddings: A numpy array that maps UserID and ItemID to BERT embeddings.
         :param batch_size: The batch size.
         :param shuffle: Whether to shuffle the sequence.
         :param seed: The seed value used to shuffle the sequence.
         """
-        # Set the ratings
+        super().__init__()
         self.ratings = ratings
+        self.users = users
+        self.items = items
 
         # Initialize both Graph and BERT embeddings sequences
         self.graph_embeddings = UserItemEmbeddings(
-            ratings, graph_embeddings,
+            ratings, users, items, graph_embeddings,
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
         self.bert_embeddings = UserItemEmbeddings(
-            ratings, bert_embeddings,
+            ratings, users, items, bert_embeddings,
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
-
-    def get_users(self):
-        return self.graph_embeddings.get_users()
-
-    def get_items(self):
-        return self.graph_embeddings.get_items()
 
     def __len__(self):
         """
@@ -146,6 +144,8 @@ class UserItemGraph(utils.Sequence):
     def __init__(
         self,
         ratings,
+        users,
+        items,
         adj_matrix,
         batch_size=512,
         shuffle=False,
@@ -155,15 +155,17 @@ class UserItemGraph(utils.Sequence):
         Initialize a sequence of Graph User-Item IDs.
 
         :param ratings: A numpy array of triples (UserID, ItemID, Rating).
+        :param users: The original users identifiers.
+        :param items: The original items identifiers.
         :param adj_matrix: The adjacency matrix.
         :param batch_size: The batch size.
         :param shuffle: Whether to shuffle the sequence.
         :param seed: The seed value used to shuffle the sequence.
         """
         super().__init__()
-
-        # Set the ratings and the adjacency matrix
         self.ratings = ratings
+        self.users = users
+        self.items = items
         self.adj_matrix = adj_matrix
 
         # Set other settings
@@ -173,12 +175,6 @@ class UserItemGraph(utils.Sequence):
         self.indexes = None
         self.random_state = None
         self.on_epoch_end()
-
-    def get_users(self):
-        return np.unique(self.ratings[:, 0])
-
-    def get_items(self):
-        return np.unique(self.ratings[:, 1])
 
     def __len__(self):
         """
@@ -218,6 +214,8 @@ class UserItemGraphEmbeddings(utils.Sequence):
     def __init__(
         self,
         ratings,
+        users,
+        items,
         adj_matrix,
         embeddings,
         batch_size=512,
@@ -228,6 +226,8 @@ class UserItemGraphEmbeddings(utils.Sequence):
         Initialize a sequence of Graph User-Item IDs and embeddings (e.g. BERT embeddings).
 
         :param ratings: A numpy array of triples (UserID, ItemID, Rating).
+        :param users: The original users identifiers.
+        :param items: The original items identifiers.
         :param adj_matrix: The adjacency matrix.
         :param embeddings: A numpy array that maps UserID and ItemID to embeddings.
         :param batch_size: The batch size.
@@ -235,26 +235,20 @@ class UserItemGraphEmbeddings(utils.Sequence):
         :param seed: The seed value used to shuffle the sequence.
         """
         super().__init__()
-
-        # Set the ratings and the adjacency matrix
         self.ratings = ratings
+        self.users = users
+        self.items = items
         self.adj_matrix = adj_matrix
 
         # Initialize both Graph and embeddings sequences
         self.graph_ids = UserItemGraph(
-            ratings, adj_matrix,
+            ratings, users, items, adj_matrix,
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
         self.embeddings = UserItemEmbeddings(
-            ratings, embeddings,
+            ratings, users, items, embeddings,
             batch_size=batch_size, shuffle=shuffle, seed=seed
         )
-
-    def get_users(self):
-        return self.graph_ids.get_users()
-
-    def get_items(self):
-        return self.graph_ids.get_items()
 
     def __len__(self):
         """

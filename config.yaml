@@ -5,7 +5,7 @@ n_workers: 12
 seed: 42
 
 model:
-  name: basic.BasicGCN
+  name: basic.BasicRS
   embedding_dim: 16
   n_hiddens: !!python/tuple [16, 16, 16]
   l2_regularizer: 1e-4
@@ -15,7 +15,7 @@ model:
   # GraphSage
   aggregate: mean
   # GAT
-  dropout_rate: 0.2
+  dropout_rate: 0.0
   # LightGCN
   n_layers: 3
   # BasicRS and HybridCBRS
@@ -25,12 +25,12 @@ model:
   feature_based: True
 
 dataset:
-  load_function_name: load_user_item_graph
+  load_function_name: load_graph_embeddings
   # For load_user_item_graph function name
   binary_adjacency: False
   sparse_adjacency: True
   # Basic or Hybrid embeddings datasets
-  graph_filepath: embeddings/user-item-properties/768DistMult.json
+  graph_filepath: embeddings/user-item/768TransH.json
   bert_user_filepath: embeddings/bert/user-lastlayer.json
   bert_item_filepath: embeddings/bert/item-lastlayer.json
   # For all the datasets

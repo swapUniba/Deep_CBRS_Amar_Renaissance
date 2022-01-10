@@ -141,11 +141,11 @@ def load_graph_embeddings(
     graph_embeddings = load_graph_user_item_embeddings(graph_filepath, users, items)
 
     data_train = UserItemEmbeddings(
-        train_ratings, graph_embeddings,
+        train_ratings, users, items, graph_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemEmbeddings(
-        test_ratings, graph_embeddings,
+        test_ratings, users, items, graph_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -183,11 +183,11 @@ def load_bert_embeddings(
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
     data_train = UserItemEmbeddings(
-        train_ratings, bert_embeddings,
+        train_ratings, users, items, bert_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemEmbeddings(
-        test_ratings, bert_embeddings,
+        test_ratings, users, items, bert_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -228,11 +228,11 @@ def load_hybrid_embeddings(
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
     data_train = HybridUserItemEmbeddings(
-        train_ratings, graph_embeddings, bert_embeddings,
+        train_ratings, users, items, graph_embeddings, bert_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = HybridUserItemEmbeddings(
-        test_ratings, graph_embeddings, bert_embeddings,
+        test_ratings, users, items, graph_embeddings, bert_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -264,7 +264,7 @@ def load_user_item_graph(
     :param test_batch_size: batch_size used in test phase.
     :return: The training and test ratings data sequence for GNN-based models.
     """
-    (train_ratings, test_ratings), _, adj_matrix = \
+    (train_ratings, test_ratings), (users, items), adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
                                 sep,
@@ -272,11 +272,11 @@ def load_user_item_graph(
                                 binary_adjacency=binary_adjacency,
                                 sparse_adjacency=sparse_adjacency)
     data_train = UserItemGraph(
-        train_ratings, adj_matrix,
+        train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemGraph(
-        test_ratings, adj_matrix,
+        test_ratings, users, items, adj_matrix,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
@@ -323,11 +323,11 @@ def load_user_item_graph_bert_embeddings(
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
     data_train = UserItemGraphEmbeddings(
-        train_ratings, adj_matrix, bert_embeddings,
+        train_ratings, users, items, adj_matrix, bert_embeddings,
         batch_size=train_batch_size, shuffle=shuffle
     )
     data_test = UserItemGraphEmbeddings(
-        test_ratings, adj_matrix, bert_embeddings,
+        test_ratings, users, items, adj_matrix, bert_embeddings,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test

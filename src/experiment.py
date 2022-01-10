@@ -7,6 +7,7 @@ from utilities import data
 from utilities.utils import LogCallback, get_experiment_loggers, get_total_parameters, nested_dict_update, make_grid
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
+from utilities.metrics import top_k_predictions, top_k_metrics
 
 import tensorflow as tf
 import numpy as np
@@ -18,11 +19,10 @@ import inspect
 import os
 import io
 
-from utilities.metrics import top_k_metrics
-
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 LOG_FREQUENCY = 100
+METRICS_TOP_KS = [5, 10, 20]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 
@@ -57,7 +57,9 @@ class Experimenter:
             self.exp_name = self.exp_name + '-' + self.config.details
 
         self.config.dest = path_join(self.config.dest, self.exp_name)
+        self.predictions_dest = path_join(self.config.dest, "predictions")
         os.makedirs(self.config.dest, exist_ok=True)
+        os.makedirs(self.predictions_dest, exist_ok=True)
 
         # Save the config in the experiment folder (R E P R O D U C I B I L I T Y)
         with open(path_join(self.config.dest, "config.yaml"), 'w') as config_output:
@@ -179,14 +181,22 @@ class Experimenter:
         predictions = self.model.predict(self.testset)
         ratings_pred = np.concatenate([self.testset.ratings[:, [0, 1]], predictions], axis=1)
         precision_at, recall_at, f1_at = {}, {}, {}
-        ks = [5, 10, 20]
-        for k in ks:
-            (precision_at[k], recall_at[k], f1_at[k]) = top_k_metrics(self.testset.ratings, ratings_pred, k=k)
+        for k in METRICS_TOP_KS:
+            # Compute the top predictions and save them to file
+            top_predictions = top_k_predictions(ratings_pred, self.trainset.users, self.trainset.items, k=k)
+            top_k_dest = path_join(self.predictions_dest, "top_{}".format(k))
+            os.makedirs(top_k_dest, exist_ok=True)
+            top_predictions.to_csv(path_join(top_k_dest, "predictions_1.tsv"), sep='\t', header=False, index=False)
 
-        metrics = pd.DataFrame([precision_at, recall_at, f1_at], index=['precision_at', 'recall_at', 'f1_at'])
-        self.logger.info('\n' + str(metrics))
+            # Compute the metrics given the filepaths of test set and the top predictions path
+            top_k_metrics(self.config.dataset.test_ratings_filepath, top_k_dest)
+            results = pd.read_csv(path_join(top_k_dest, "results.tsv"), sep='\t', header=None)
+            results = results.drop(0, axis=1).to_numpy().squeeze()
+            precision_at[k], recall_at[k], f1_at[k] = results[0], results[1], results[2]
+
+        # Write metrics to tensorboard
         with self.board_writer.as_default():
-            for k in ks:
+            for k in METRICS_TOP_KS:
                 tf.summary.scalar('precision_at', precision_at[k], step=k)
                 tf.summary.scalar('recall_at', recall_at[k], step=k)
                 tf.summary.scalar('f1_at', f1_at[k], step=k)
