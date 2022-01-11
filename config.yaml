@@ -39,7 +39,7 @@ dataset:
   shuffle: True
 
 parameters:
-  epochs: 1
+  epochs: 25
   optimizer:
     name: Adam
     learning_rate: 0.001
