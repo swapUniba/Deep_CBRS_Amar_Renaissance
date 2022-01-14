@@ -26,7 +26,7 @@ import mlflow
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
-MLFLOW_EXP_NAME = 'SIS - Movielens-1M - BasicRS with GNNs'
+MLFLOW_EXP_NAME = 'SIS - Movielens-1M - MixedRS with GNNs'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -245,8 +245,9 @@ class MultiExperimenter:
         # Get grid of experiments
         dict_lists = config.get('grid')
         if dict_lists:
-            dicts = make_grid(dict_lists)
-            self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
+            for grid in dict_lists.values():
+                dicts = make_grid(grid)
+                self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
         print("Retrieved experiments:")
         for exp in self.experiments.keys():
             print(exp)
