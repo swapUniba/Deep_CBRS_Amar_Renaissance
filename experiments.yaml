@@ -1,8 +1,68 @@
 grid:
-  model:
-    name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN]
-    l2_regularizer: [1e-5, 1e-4, 1e-3]
-    dense_units: [[64, 64]]
-    clf_units: [[64, 64]]
-  dataset:
-    load_function_name: [load_user_item_graph]
+  grid1:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [32, 32], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8]]
+      n_layers: 2
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid2:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [48, 48], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16]]
+      n_layers: 2
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid3:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [64, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32]]
+      n_layers: 2
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+
+  grid4:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [32, 32], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8, 8]]
+      n_layers: 3
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid5:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [64, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16, 16]]
+      n_layers: 3
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid6:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGAT, hybrid.HybridBertGraphSage, hybrid.HybridBertLightGCN]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [128, 128], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32, 32]]
+      n_layers: 3
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
