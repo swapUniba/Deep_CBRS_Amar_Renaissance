@@ -149,8 +149,6 @@ def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
     formatter = logging.Formatter('%(asctime)s %(message)s', '[%H:%M:%S]')
     file_handler.setFormatter(formatter)
-    stream_handler = logging.StreamHandler()
-    stream_handler.setFormatter(formatter)
 
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
@@ -158,4 +156,5 @@ def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
     callback_logger = logging.getLogger(exp_name + '_callback')
     callback_logger.addHandler(file_handler)
     callback_logger.setLevel(logging.INFO)
+    callback_logger.propagate = False
     return logger, callback_logger
