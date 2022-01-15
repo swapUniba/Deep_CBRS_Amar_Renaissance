@@ -138,23 +138,23 @@ def mlflow_linearize(dictionary):
     return exps
 
 
-def get_experiment_loggers(exp_name, destination_folder, mlflow_logger):
+def get_experiment_logger(destination_folder):
     """
-    Get the two loggers required for the Experimenter
-    :param exp_name: unique experiment name
+    Get the logger required for the Experimenter.
+
     :param destination_folder: folder where to save the log
-    :return: logger, callback_logger
+    :return: logger
     """
-    logger = mlflow_logger
-    file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
+    # Instantiate the formatted and force-flush file handler
     formatter = logging.Formatter('%(asctime)s %(message)s', '[%H:%M:%S]')
+    file_handler = FlushFileHandler(os.path.join(destination_folder, 'log.txt'))
     file_handler.setFormatter(formatter)
 
+    # Instantiate the logger
+    logger = logging.getLogger('callback')
+    for handler in logger.handlers:  # Delete all the current handlers
+        logger.removeHandler(handler)
     logger.addHandler(file_handler)
     logger.setLevel(logging.INFO)
-
-    callback_logger = logging.getLogger(exp_name + '_callback')
-    callback_logger.addHandler(file_handler)
-    callback_logger.setLevel(logging.INFO)
-    callback_logger.propagate = False
-    return logger, callback_logger
+    logger.propagate = False  # Do not write also on stdout (i.e. don't propagate to upper-level logger)
+    return logger

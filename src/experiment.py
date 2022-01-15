@@ -4,7 +4,7 @@ from os.path import join as path_join
 from time import strftime
 
 from utilities.utils import \
-    get_experiment_loggers, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
+    get_experiment_logger, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
@@ -75,7 +75,7 @@ class Experimenter:
             YAML().dump(config, config_output)
 
         # Logging init
-        self.logger, self.callback_logger = get_experiment_loggers(self.exp_name, self.config.dest, mlflow.utils._logger)
+        self.logger = get_experiment_logger(self.config.dest)
 
         # Print config
         self.logger.log(logging.INFO, 'CONFIG \n')
@@ -162,7 +162,7 @@ class Experimenter:
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[LogCallback(self.callback_logger, LOG_FREQUENCY)])
+            callbacks=[LogCallback(self.logger, LOG_FREQUENCY)])
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')
