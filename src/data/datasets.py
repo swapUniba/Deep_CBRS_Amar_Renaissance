@@ -1,5 +1,6 @@
 import random
 import itertools as it
+import collections
 
 import numpy as np
 from tensorflow.keras import utils
@@ -214,7 +215,7 @@ class UserItemGraph(utils.Sequence):
             self.random_state.shuffle(self.indexes)
 
 
-class UserItemGraphPosNegSample:
+class UserItemGraphPosNegSample(utils.Sequence):
     def __init__(
             self,
             ratings,
@@ -222,7 +223,8 @@ class UserItemGraphPosNegSample:
             items,
             adj_matrix,
             batch_size=512,
-            seed=42
+            seed=42,
+            sample_size=10
     ):
         """
         Initialize a sequence of Graph User-Item IDs.
@@ -233,6 +235,7 @@ class UserItemGraphPosNegSample:
         :param adj_matrix: The adjacency matrix.
         :param batch_size: The batch size.
         :param seed: The seed value used to shuffle the sequence.
+        :param sample_size: sample size of items for each user.
         """
         super().__init__()
         self.ratings = ratings
@@ -243,7 +246,7 @@ class UserItemGraphPosNegSample:
         if len(neg_adj_dict) == 0:
             raise ValueError('Negative ratings are needed!!!')
 
-        pos_adj_matrix = sparse.coo.matrix(pos_adj_dict,
+        pos_adj_matrix = sparse.coo_matrix((list(pos_adj_dict.values()), list(zip(*pos_adj_dict.keys()))),
                                            shape=adj_matrix.shape, dtype=adj_matrix.dtype
                                            )
         self.adj_matrix = pos_adj_matrix
@@ -251,11 +254,20 @@ class UserItemGraphPosNegSample:
         # Set other settings
         self.batch_size = batch_size
         self.seed = seed
-        random.seed(seed)
+        self.random_state = np.random.RandomState(seed)
         # Group positive and negative items for each user
-        pos_dict = {k: [item for user, item in v] for k, v in it.groupby(pos_adj_dict.keys(), key=lambda x: x[0])}
-        neg_dict = {k: [item for user, item in v] for k, v in it.groupby(neg_adj_dict.keys(), key=lambda x: x[0])}
-        self.user_item_dict = {user: (pos_dict[user], neg_dict[user])
+        pos_dict = {k: [item for user, item in v] for k, v in
+                    it.groupby(sorted(pos_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
+        neg_dict = {k: [item for user, item in v] for k, v in
+                    it.groupby(sorted(neg_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
+
+        def sample_negatives(user, positives):
+            negatives = neg_dict.get(user)
+            if negatives:
+                return negatives
+            return self.random_state.choice(list(set(self.items) - set(positives)), size=sample_size)
+
+        self.user_item_dict = {user: (pos_dict[user], sample_negatives(user, pos_dict[user]))
                                for user in users}
 
     def __getitem__(self, idx):
@@ -266,11 +278,20 @@ class UserItemGraphPosNegSample:
         :return: A pair consisting of User-Item IDs and the ratings.
 
         """
-        batch_users = random.sample(self.users, self.batch_size // 2)
-        pos_ratings = [(user, random.sample(self.user_item_dict[user][0], 1), 1) for user in batch_users]
-        neg_ratings = [(user, random.sample(self.user_item_dict[user][1], 1), -1) for user in batch_users]
-        ratings = np.stack([pos_ratings, neg_ratings])
+        batch_users = self.random_state.choice(self.users, size=self.batch_size // 2)
+        pos_ratings = [(user, self.random_state.choice(self.user_item_dict[user][0], 1), 1) for user in batch_users]
+        neg_ratings = [(user, self.random_state.choice(self.user_item_dict[user][1], 1), 0) for user in batch_users]
+        pos_ratings.extend(neg_ratings)
+        ratings = np.array(pos_ratings, dtype='int32')
         return (ratings[:, 0], ratings[:, 1]), ratings[:, 2]
+
+    def __len__(self):
+        """
+        Get the number of batches.
+
+        :return: The number of batches.
+        """
+        return int(np.ceil(len(self.ratings) / self.batch_size))
 
 
 class UserItemGraphEmbeddings(utils.Sequence):

@@ -370,6 +370,7 @@ def load_user_item_graph(
 def load_user_item_graph_sample(
         train_ratings_filepath,
         test_ratings_filepath,
+        props_triples_filepath=None,
         sep='\t',
         sparse_adjacency=True,
         train_batch_size=1024,
@@ -381,6 +382,8 @@ def load_user_item_graph_sample(
 
     :param train_ratings_filepath: The training ratings CSV or TSV filepath.
     :param test_ratings_filepath: The test ratings CSV or TSV filepath.
+    :param props_triples_filepath: The properties triples CSV or TSV filepath. It can be None, and it is used only if
+                                   return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
@@ -391,7 +394,8 @@ def load_user_item_graph_sample(
     (train_ratings, test_ratings), (users, items), adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
-                                sep,
+                                props_triples_filepath,
+                                sep=sep,
                                 return_adjacency=True,
                                 binary_adjacency=True,
                                 sparse_adjacency=sparse_adjacency)
@@ -400,7 +404,7 @@ def load_user_item_graph_sample(
         batch_size=train_batch_size
     )
     data_test = UserItemGraph(
-        test_ratings, users, items, adj_matrix[0],
+        test_ratings, users, items, adj_matrix,
         batch_size=test_batch_size, shuffle=False
     )
     return data_train, data_test
