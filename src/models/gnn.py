@@ -1,15 +1,13 @@
 import abc
 
 import tensorflow as tf
-from keras import regularizers
-from scipy import sparse
+from keras import models, layers, regularizers
 from spektral.layers import GCNConv, GraphSageConv, GATConv
-from tensorflow.keras import models, layers
 
 from layers.dgcf_conv import DGCFConv
 from layers.lightgcn_conv import LightGCNConv
 from layers.reduction import ReductionLayer
-from utilities.math import sparse_matrix_to_tensor, get_ngrade_neighbors
+from utilities.math import convert_to_tensor, get_ngrade_neighbors
 
 
 class SequentialGNN(models.Model):
@@ -28,7 +26,6 @@ class SequentialGNN(models.Model):
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param seq_layers: A list of GNN layers.
-        :param n_hops: Distance from which every node will be convoluted to.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param final_node: Defines how the final node will be represented from layers. One between the following:
                            'concatenation', 'sum', 'mean', 'w-sum', 'last'.
@@ -48,11 +45,8 @@ class SequentialGNN(models.Model):
             regularizer=regularizer
         )
 
-        # Initialize the adjacency matrix constant parameter and n grade neighbors matrix
-        if sparse.issparse(adj_matrix):
-            self.adj_matrix = sparse_matrix_to_tensor(adj_matrix, dtype=tf.float32)
-        else:
-            self.adj_matrix = tf.convert_to_tensor(adj_matrix, dtype=tf.float32)
+        # Initialize the adjacency matrix constant parameter
+        self.adj_matrix = convert_to_tensor(adj_matrix, dtype=tf.float32)
 
         # Compute the n-grade adjacency matrix, if needed
         if self.cache_neighbours:
@@ -78,7 +72,6 @@ class SequentialGNN(models.Model):
         return self.n_hops
 
     def call(self, inputs, **kwargs):
-        # Compute the hidden states given by each GCN layer
         x = self.embeddings
         hs = [x]
         for gnn in self.seq_layers:
@@ -184,7 +177,7 @@ class GAT(GNN):
             self,
             adj_matrix,
             n_hiddens=(8, 8, 8),
-            dropout_rate=0.2,
+            dropout_rate=0.0,
             **kwargs
     ):
         """

@@ -8,6 +8,7 @@ from utilities.utils import \
 from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
+from models.kgnn import KGATCallback
 from utilities.metrics import top_k_predictions, top_k_metrics
 from utilities import losses
 from data import loaders
@@ -161,12 +162,18 @@ class Experimenter:
         self.build_optimizer()
         self.build_model()
 
+        # Set the callbacks
+        callbacks = [LogCallback(self.logger, LOG_FREQUENCY)]
+        if 'KGAT' in self.model.__class__.__name__:
+            callbacks.append(KGATCallback(self.logger))
+
         self.logger.info('Training:')
-        history = self.model.fit(
+        self.model.fit(
             self.trainset,
             epochs=self.parameters.epochs,
             workers=self.config.n_workers,
-            callbacks=[LogCallback(self.logger, LOG_FREQUENCY)])
+            callbacks=callbacks
+        )
 
         # creates a HDF5 file 'model.h5'
         self.logger.info('Saving model...')

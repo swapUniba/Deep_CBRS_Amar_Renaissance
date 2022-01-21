@@ -3,6 +3,12 @@ import tensorflow as tf
 from scipy import sparse
 
 
+def convert_to_tensor(x, dtype=tf.float32):
+    if sparse.issparse(x):
+        return sparse_matrix_to_tensor(x, dtype=dtype)
+    return tf.convert_to_tensor(x, dtype=dtype)
+
+
 def sparse_matrix_to_tensor(x, dtype=tf.float32):
     """
     Convert a Scipy sparse matrix to a Tensorflow's SparseTensor.
