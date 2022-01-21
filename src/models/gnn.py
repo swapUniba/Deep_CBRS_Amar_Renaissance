@@ -6,6 +6,7 @@ from scipy import sparse
 from spektral.layers import GCNConv, GraphSageConv, GATConv
 from tensorflow.keras import models, layers
 
+from layers.dgcf_conv import DGCFConv
 from layers.lightgcn_conv import LightGCNConv
 from layers.reduction import ReductionLayer
 from utilities.math import sparse_matrix_to_tensor, get_ngrade_neighbors
@@ -269,3 +270,30 @@ class LightGCN(GNN):
 
     def build_gnn_layer(self, i, **kwargs):
         return LightGCNConv()
+
+
+class DGCF(GNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_layers=3,
+            **kwargs
+    ):
+        """
+        Initialize DGCF.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_layers: The number of sequential DGCF layers.
+        """
+        # Override final_node parameter to 'mean'
+        kwargs['final_node'] = 'mean'
+
+        # Note normalizing the adjacency matrix using the GCN filter and getting the crosshop matrix
+        crosshop_matrix = DGCFConv.preprocess(adj_matrix)
+        super().__init__(
+            crosshop_matrix,
+            n_layers,
+            **kwargs)
+
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
+        return DGCFConv(regularizer)
