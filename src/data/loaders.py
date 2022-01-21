@@ -403,9 +403,9 @@ def load_user_item_graph_sample(
         train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size
     )
-    data_test = UserItemGraph(
+    data_test = UserItemGraphPosNegSample(
         test_ratings, users, items, adj_matrix,
-        batch_size=test_batch_size, shuffle=False
+        batch_size=test_batch_size
     )
     return data_train, data_test
 
