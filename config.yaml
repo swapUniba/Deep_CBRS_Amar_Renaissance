@@ -24,7 +24,8 @@ model:
 
 dataset:
   load_function_name: load_graph_embeddings
-  # For load_user_item_graph function name
+  # For adjacency matrix related datasets function name
+  props_triples_filepath: null
   binary_adjacency: False
   sparse_adjacency: True
   symmetric_adjacency: True
