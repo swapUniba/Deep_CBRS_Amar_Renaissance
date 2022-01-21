@@ -27,6 +27,7 @@ dataset:
   # For load_user_item_graph function name
   binary_adjacency: False
   sparse_adjacency: True
+  symmetric_adjacency: True
   # Basic or Hybrid embeddings datasets
   graph_filepath: embeddings/user-item/768TransH.json
   bert_user_filepath: embeddings/bert/user-lastlayer.json

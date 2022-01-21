@@ -15,7 +15,8 @@ def load_train_test_ratings(
         sep='\t',
         return_adjacency=False,
         binary_adjacency=False,
-        sparse_adjacency=True
+        sparse_adjacency=True,
+        symmetric_adjacency=True
 ):
     """
     Load train and test ratings. Note that the user and item IDs are converted to sequential numbers.
@@ -28,6 +29,7 @@ def load_train_test_ratings(
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
+    :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
              Moreover, it returns the users and items original unique IDs. Additionally, it also returns the training
              interactions adjacency matrix (assuming un-directed arcs).
@@ -55,23 +57,27 @@ def load_train_test_ratings(
     adj_size = len(users) + len(items)
 
     # Compute the adjacency matrix
-    pos_idx = train_ratings[:, 2] == 1
     if binary_adjacency:
-        adj_matrix = np.zeros([2, adj_size, adj_size], dtype=np.float32)
-        adj_matrix[0, train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1.0
-        adj_matrix[1, train_ratings[~pos_idx, 0], train_ratings[~pos_idx, 1]] = 1.0
-        adj_matrix += np.transpose(adj_matrix, axes=[0, 2, 1])
+        if not sparse_adjacency:
+            raise NotImplementedError("Non-sparse multi-relational adjacency matrix is not supported")
+        adj_matrix = sparse.coo_matrix(
+            (train_ratings[:, 2], (train_ratings[:, 0], train_ratings[:, 1])),
+            shape=[adj_size, adj_size], dtype=np.float32
+        )
     else:
-        if sparse_adjacency:
-            adj_matrix = sparse.coo_matrix(
-                (train_ratings[pos_idx, 2], (train_ratings[pos_idx, 0], train_ratings[pos_idx, 1])),
-                shape=[adj_size, adj_size], dtype=np.float32
-            )
-            adj_matrix += adj_matrix.T
-        else:
-            adj_matrix = np.zeros([adj_size, adj_size], dtype=np.float32)
-            adj_matrix[train_ratings[pos_idx, 0], train_ratings[pos_idx, 1]] = 1.0
-            adj_matrix += adj_matrix.T
+        pos_idx = train_ratings[:, 2] == 1
+        adj_matrix = sparse.coo_matrix(
+            (train_ratings[pos_idx, 2], (train_ratings[pos_idx, 0], train_ratings[pos_idx, 1])),
+            shape=[adj_size, adj_size], dtype=np.float32
+        )
+
+    # Introduce symmetry
+    if symmetric_adjacency:
+        adj_matrix += adj_matrix.T
+
+    # Convert to dense matrix
+    if not sparse_adjacency:
+        adj_matrix = adj_matrix.todense()
 
     return (train_ratings, test_ratings), (users, items), adj_matrix
 
@@ -244,6 +250,7 @@ def load_user_item_graph(
         sep='\t',
         binary_adjacency=False,
         sparse_adjacency=True,
+        symmetric_adjacency=True,
         shuffle=True,
         train_batch_size=1024,
         test_batch_size=2048
@@ -259,6 +266,7 @@ def load_user_item_graph(
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
+    :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param shuffle: Tells if shuffle the training dataset.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
@@ -270,7 +278,8 @@ def load_user_item_graph(
                                 sep,
                                 return_adjacency=True,
                                 binary_adjacency=binary_adjacency,
-                                sparse_adjacency=sparse_adjacency)
+                                sparse_adjacency=sparse_adjacency,
+                                symmetric_adjacency=symmetric_adjacency)
     data_train = UserItemGraph(
         train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size, shuffle=shuffle
@@ -290,6 +299,7 @@ def load_user_item_graph_bert_embeddings(
         sep='\t',
         binary_adjacency=False,
         sparse_adjacency=True,
+        symmetric_adjacency=True,
         shuffle=True,
         train_batch_size=1024,
         test_batch_size=2048
@@ -307,6 +317,7 @@ def load_user_item_graph_bert_embeddings(
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
     :param sparse_adjacency: User only if binary_adjacency is False. Whether to return the adjacency matrix as a sparse
                              matrix instead of dense.
+    :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param shuffle: Tells if shuffle the training dataset.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
@@ -318,7 +329,8 @@ def load_user_item_graph_bert_embeddings(
                                 sep,
                                 return_adjacency=True,
                                 binary_adjacency=binary_adjacency,
-                                sparse_adjacency=sparse_adjacency)
+                                sparse_adjacency=sparse_adjacency,
+                                symmetric_adjacency=symmetric_adjacency)
 
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
