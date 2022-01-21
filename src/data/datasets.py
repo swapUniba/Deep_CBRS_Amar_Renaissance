@@ -1,19 +1,21 @@
 import random
+import itertools as it
 
 import numpy as np
 from tensorflow.keras import utils
+from scipy import sparse
 
 
 class UserItemEmbeddings(utils.Sequence):
     def __init__(
-        self,
-        ratings,
-        users,
-        items,
-        embeddings,
-        batch_size=512,
-        shuffle=False,
-        seed=42
+            self,
+            ratings,
+            users,
+            items,
+            embeddings,
+            batch_size=512,
+            shuffle=False,
+            seed=42
     ):
         """
         Initialize a sequence of User-Item embeddings.
@@ -78,15 +80,15 @@ class UserItemEmbeddings(utils.Sequence):
 
 class HybridUserItemEmbeddings(utils.Sequence):
     def __init__(
-        self,
-        ratings,
-        users,
-        items,
-        graph_embeddings,
-        bert_embeddings,
-        batch_size=512,
-        shuffle=False,
-        seed=42
+            self,
+            ratings,
+            users,
+            items,
+            graph_embeddings,
+            bert_embeddings,
+            batch_size=512,
+            shuffle=False,
+            seed=42
     ):
         """
         Initialize a sequence of Hybrid (Graph+BERT) User-Item embeddings.
@@ -144,14 +146,14 @@ class HybridUserItemEmbeddings(utils.Sequence):
 
 class UserItemGraph(utils.Sequence):
     def __init__(
-        self,
-        ratings,
-        users,
-        items,
-        adj_matrix,
-        batch_size=512,
-        shuffle=False,
-        seed=42
+            self,
+            ratings,
+            users,
+            items,
+            adj_matrix,
+            batch_size=512,
+            shuffle=False,
+            seed=42
     ):
         """
         Initialize a sequence of Graph User-Item IDs.
@@ -214,13 +216,13 @@ class UserItemGraph(utils.Sequence):
 
 class UserItemGraphPosNegSample:
     def __init__(
-        self,
-        ratings,
-        users,
-        items,
-        adj_matrix,
-        batch_size=512,
-        seed=42
+            self,
+            ratings,
+            users,
+            items,
+            adj_matrix,
+            batch_size=512,
+            seed=42
     ):
         """
         Initialize a sequence of Graph User-Item IDs.
@@ -236,18 +238,24 @@ class UserItemGraphPosNegSample:
         self.ratings = ratings
         self.users = users
         self.items = items
-        try:
-            pos_adj, neg_adj = adj_matrix
-        except TypeError:
-            raise TypeError("Both positive and negative matrices are required")
-        self.adj_matrix = pos_adj
+        pos_adj_dict = {k: v for k, v in adj_matrix.todok().items() if v == 1}
+        neg_adj_dict = {k: v for k, v in adj_matrix.todok().items() if v == 0}
+        if len(neg_adj_dict) == 0:
+            raise ValueError('Negative ratings are needed!!!')
+
+        pos_adj_matrix = sparse.coo.matrix(pos_adj_dict,
+                                           shape=adj_matrix.shape, dtype=adj_matrix.dtype
+                                           )
+        self.adj_matrix = pos_adj_matrix
 
         # Set other settings
         self.batch_size = batch_size
         self.seed = seed
         random.seed(seed)
         # Group positive and negative items for each user
-        self.user_item_dict = {user: ([np.where(pos_adj[user] == 1)], [np.where(neg_adj[user] == 1)])
+        pos_dict = {k: [item for user, item in v] for k, v in it.groupby(pos_adj_dict.keys(), key=lambda x: x[0])}
+        neg_dict = {k: [item for user, item in v] for k, v in it.groupby(neg_adj_dict.keys(), key=lambda x: x[0])}
+        self.user_item_dict = {user: (pos_dict[user], neg_dict[user])
                                for user in users}
 
     def __getitem__(self, idx):
@@ -267,15 +275,15 @@ class UserItemGraphPosNegSample:
 
 class UserItemGraphEmbeddings(utils.Sequence):
     def __init__(
-        self,
-        ratings,
-        users,
-        items,
-        adj_matrix,
-        embeddings,
-        batch_size=512,
-        shuffle=False,
-        seed=42,
+            self,
+            ratings,
+            users,
+            items,
+            adj_matrix,
+            embeddings,
+            batch_size=512,
+            shuffle=False,
+            seed=42,
     ):
         """
         Initialize a sequence of Graph User-Item IDs and embeddings (e.g. BERT embeddings).
