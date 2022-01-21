@@ -42,23 +42,38 @@ def build_adjacency_matrix(
             raise NotImplementedError("A multi-relational adjacency matrix must be sparse")
         coo_data = bi_ratings[:, 2]
         coo_rows, coo_cols = bi_ratings[:, 0], bi_ratings[:, 1]
+
+        # Include properties triples
+        if props_triples is not None:
+            prop_coo_data = props_triples[:, 2]
+            prop_coo_rows, prop_coo_cols = props_triples[:, 0], props_triples[:, 1]
+            coo_data = np.concatenate([coo_data, prop_coo_data])
+            coo_rows, coo_cols = np.concatenate([coo_rows, prop_coo_rows]), np.concatenate([coo_cols, prop_coo_cols])
+
+        # Make the matrix symmetric
         if symmetric_adjacency:
             coo_data = np.concatenate([coo_data, coo_data])
             coo_rows, coo_cols = np.concatenate([coo_rows, coo_cols]), np.concatenate([coo_cols, coo_rows])
+
+        # Instantiate the sparse adjacency matrix
         adj_matrix = sparse.coo_matrix(
             (coo_data, (coo_rows, coo_cols)),
             shape=[adj_size, adj_size], dtype=np.float32
         )
-    else:
-        pos_idx = bi_ratings[:, 2] == 1
-        adj_matrix = sparse.coo_matrix(
-            (bi_ratings[pos_idx, 2], (bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1])),
-            shape=[adj_size, adj_size], dtype=np.float32
-        )
-        if symmetric_adjacency:
-            adj_matrix += adj_matrix.T
+        return adj_matrix
 
-    # Convert to dense matrix
+    # Instantiate the sparse adjacency matrix
+    pos_idx = bi_ratings[:, 2] == 1
+    adj_matrix = sparse.coo_matrix(
+        (bi_ratings[pos_idx, 2], (bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1])),
+        shape=[adj_size, adj_size], dtype=np.float32
+    )
+
+    # Make the matrix symmetric
+    if symmetric_adjacency:
+        adj_matrix += adj_matrix.T
+
+    # Convert to dense matrix, if specified
     if not sparse_adjacency:
         adj_matrix = adj_matrix.todense()
 
@@ -303,6 +318,7 @@ def load_hybrid_embeddings(
 def load_user_item_graph(
         train_ratings_filepath,
         test_ratings_filepath,
+        props_triples_filepath=None,
         sep='\t',
         binary_adjacency=False,
         sparse_adjacency=True,
@@ -317,6 +333,8 @@ def load_user_item_graph(
 
     :param train_ratings_filepath: The training ratings CSV or TSV filepath.
     :param test_ratings_filepath: The test ratings CSV or TSV filepath.
+    :param props_triples_filepath: The properties triples CSV or TSV filepath. It can be None, and it is used only if
+                                   return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param binary_adjacency: Used only if return_adjacency is True. Whether to consider both positive and negative
                              ratings, hence returning two adjacency matrices as an array of shape (2, n_nodes, n_nodes).
@@ -331,6 +349,7 @@ def load_user_item_graph(
     (train_ratings, test_ratings), (users, items), adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
+                                props_triples_filepath,
                                 sep=sep,
                                 return_adjacency=True,
                                 binary_adjacency=binary_adjacency,
@@ -352,6 +371,7 @@ def load_user_item_graph_bert_embeddings(
         test_ratings_filepath,
         bert_user_filepath,
         bert_item_filepath,
+        props_triples_filepath=None,
         sep='\t',
         binary_adjacency=False,
         sparse_adjacency=True,
@@ -366,6 +386,8 @@ def load_user_item_graph_bert_embeddings(
 
     :param train_ratings_filepath: The training ratings CSV or TSV filepath.
     :param test_ratings_filepath: The test ratings CSV or TSV filepath.
+    :param props_triples_filepath: The properties triples CSV or TSV filepath. It can be None, and it is used only if
+                                   return_adjacency is True.
     :param bert_user_filepath: The filepath for User BERT embeddings.
     :param bert_item_filepath: The filepath for Item BERT embeddings.
     :param sep: The separator to use for CSV or TSV files.
@@ -382,6 +404,7 @@ def load_user_item_graph_bert_embeddings(
     (train_ratings, test_ratings), (users, items), adj_matrix = \
         load_train_test_ratings(train_ratings_filepath,
                                 test_ratings_filepath,
+                                props_triples_filepath,
                                 sep=sep,
                                 return_adjacency=True,
                                 binary_adjacency=binary_adjacency,
