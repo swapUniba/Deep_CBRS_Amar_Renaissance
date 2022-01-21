@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
-from models.gnn import GCN, GAT, GraphSage, LightGCN
+from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
 
 
 class HybridCBRS(models.Model):
@@ -135,3 +135,12 @@ class HybridBertLightGCN(HybridBertGNN):
         """
         super().__init__(**kwargs)
         self.gnn = LightGCN(*args, **kwargs)
+
+
+class HybridBertDGCF(HybridBertGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize an hybrid recommender system based on GraphSage and BERT embeddings.
+        """
+        super().__init__(**kwargs)
+        self.gnn = DGCF(*args, **kwargs)
