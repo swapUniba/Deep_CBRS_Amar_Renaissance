@@ -1,3 +1,5 @@
+import random
+
 import numpy as np
 from tensorflow.keras import utils
 
@@ -208,6 +210,59 @@ class UserItemGraph(utils.Sequence):
                 self.random_state = np.random.RandomState(self.seed)
             self.indexes = np.arange(len(self.ratings))
             self.random_state.shuffle(self.indexes)
+
+
+class UserItemGraphPosNegSample:
+    def __init__(
+        self,
+        ratings,
+        users,
+        items,
+        adj_matrix,
+        batch_size=512,
+        seed=42
+    ):
+        """
+        Initialize a sequence of Graph User-Item IDs.
+
+        :param ratings: A numpy array of triples (UserID, ItemID, Rating).
+        :param users: The original users identifiers.
+        :param items: The original items identifiers.
+        :param adj_matrix: The adjacency matrix.
+        :param batch_size: The batch size.
+        :param seed: The seed value used to shuffle the sequence.
+        """
+        super().__init__()
+        self.ratings = ratings
+        self.users = users
+        self.items = items
+        try:
+            pos_adj, neg_adj = adj_matrix
+        except TypeError:
+            raise TypeError("Both positive and negative matrices are required")
+        self.adj_matrix = pos_adj
+
+        # Set other settings
+        self.batch_size = batch_size
+        self.seed = seed
+        random.seed(seed)
+        # Group positive and negative items for each user
+        self.user_item_dict = {user: ([np.where(pos_adj[user] == 1)], [np.where(neg_adj[user] == 1)])
+                               for user in users}
+
+    def __getitem__(self, idx):
+        """
+        Get a sampled pair of positive and negative items for a batch of users
+
+        :param idx: The index of the batch.
+        :return: A pair consisting of User-Item IDs and the ratings.
+
+        """
+        batch_users = random.sample(self.users, self.batch_size // 2)
+        pos_ratings = [(user, random.sample(self.user_item_dict[user][0], 1), 1) for user in batch_users]
+        neg_ratings = [(user, random.sample(self.user_item_dict[user][1], 1), -1) for user in batch_users]
+        ratings = np.stack([pos_ratings, neg_ratings])
+        return (ratings[:, 0], ratings[:, 1]), ratings[:, 2]
 
 
 class UserItemGraphEmbeddings(utils.Sequence):
