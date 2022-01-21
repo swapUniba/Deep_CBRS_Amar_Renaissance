@@ -1,13 +1,10 @@
 import abc
 
-import numpy as np
-from scipy import sparse as sp
 import tensorflow as tf
 from keras import models, layers, regularizers
 from spektral.layers import GCNConv, GraphSageConv, GATConv
 
 from layers.lightgcn_conv import LightGCNConv
-from layers.kgat_conv import KGATConv
 from layers.reduction import ReductionLayer
 from utilities.math import convert_to_tensor, get_ngrade_neighbors
 
@@ -17,7 +14,6 @@ class SequentialGNN(models.Model):
         self,
         adj_matrix,
         seq_layers,
-        n_relations=1,
         embedding_dim=8,
         final_node='concatenation',
         dropout=None,
@@ -29,7 +25,6 @@ class SequentialGNN(models.Model):
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param seq_layers: A list of GNN layers.
-        :param n_relations: The number of relations to consider.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param final_node: Defines how the final node will be represented from layers. One between the following:
                            'concatenation', 'sum', 'mean', 'w-sum', 'last'.
@@ -49,20 +44,8 @@ class SequentialGNN(models.Model):
             regularizer=regularizer
         )
 
-        # Initialize the relations embedding weights
-        if n_relations > 1:
-            self.rel_embeddings = self.add_weight(
-                name='rel_embeddings',
-                shape=(n_relations, embedding_dim),
-                initializer='glorot_uniform',
-                regularizer=regularizer
-            )
-        else:
-            self.rel_embeddings = None
-
         # Initialize the adjacency matrix constant parameter
-        dtype = tf.int32 if n_relations > 1 else tf.float32
-        self.adj_matrix = convert_to_tensor(adj_matrix, dtype=dtype)
+        self.adj_matrix = convert_to_tensor(adj_matrix, dtype=tf.float32)
 
         # Compute the n-grade adjacency matrix, if needed
         if self.cache_neighbours:
@@ -91,10 +74,7 @@ class SequentialGNN(models.Model):
         x = self.embeddings
         hs = [x]
         for gnn in self.seq_layers:
-            if self.rel_embeddings is None:
-                x = gnn([x, self.adj_matrix])
-            else:
-                x = gnn([x, self.rel_embeddings, self.adj_matrix])
+            x = gnn([x, self.adj_matrix])
             if self.dropout is not None:
                 x = self.dropout(x)
             hs.append(x)
@@ -108,7 +88,6 @@ class GNN(abc.ABC, models.Model):
         self,
         adj_matrix,
         n_hops,
-        n_relations=1,
         embedding_dim=8,
         final_node="concatenation",
         dropout=None,
@@ -121,7 +100,6 @@ class GNN(abc.ABC, models.Model):
 
         :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
         :param n_hops: Distance from which every node will be convoluted to.
-        :param n_relations: The number of relations to consider.
         :param embedding_dim: The dimension of latent features representations of user and items.
         :param final_node: Defines how the final node will be represented from layers. One between the following:
                            'concatenation', 'sum', 'mean', 'w-sum', 'last'.
@@ -143,7 +121,7 @@ class GNN(abc.ABC, models.Model):
         gnn_kwargs = {'regularizer': regularizer}
         gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
         self.gnn_layers = SequentialGNN(
-            adj_matrix, gnn_layers, n_relations=n_relations,
+            adj_matrix, gnn_layers,
             embedding_dim=embedding_dim, final_node=final_node,
             dropout=dropout, regularizer=regularizer, cache_neighbours=cache_neighbours
         )
@@ -198,7 +176,7 @@ class GAT(GNN):
             self,
             adj_matrix,
             n_hiddens=(8, 8, 8),
-            dropout_rate=0.2,
+            dropout_rate=0.0,
             **kwargs
     ):
         """
@@ -284,35 +262,3 @@ class LightGCN(GNN):
 
     def build_gnn_layer(self, i, **kwargs):
         return LightGCNConv()
-
-
-class KGAT(GNN):
-    def __init__(
-            self,
-            adj_matrix,
-            n_hiddens=(8, 8, 8),
-            **kwargs
-    ):
-        """
-        Initialize a Basic recommender system based on Knowledge Graph Attention Networks (KGAT).
-
-        :param adj_matrix: The graph adjacency matrix. It must be sparse.
-        :param n_hiddens: A sequence of numbers of hidden units for each KGAT layer.
-        """
-        if not sp.issparse(adj_matrix):
-            raise ValueError("The adjacency matrix should be sparse for KGAT")
-        self.n_hiddens = n_hiddens
-
-        super().__init__(
-            adj_matrix,
-            len(n_hiddens),
-            n_relations=len(np.unique(adj_matrix.data)),
-            **kwargs)
-
-    def build_gnn_layer(self, i, regularizer=None, **kwargs):
-        return KGATConv(
-            self.n_hiddens[i],
-            activation='leaky_relu',
-            kernel_regularizer=regularizer,
-            bias_regularizer=regularizer
-        )

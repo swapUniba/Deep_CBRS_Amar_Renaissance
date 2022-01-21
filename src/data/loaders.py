@@ -60,8 +60,13 @@ def load_train_test_ratings(
     if binary_adjacency:
         if not sparse_adjacency:
             raise NotImplementedError("Non-sparse multi-relational adjacency matrix is not supported")
+        coo_data = train_ratings[:, 2]
+        coo_rows, coo_cols = train_ratings[:, 0], train_ratings[:, 1]
+        if symmetric_adjacency:
+            coo_data = np.concatenate([coo_data, coo_data])
+            coo_rows, coo_cols = np.concatenate([coo_rows, coo_cols]), np.concatenate([coo_cols, coo_rows])
         adj_matrix = sparse.coo_matrix(
-            (train_ratings[:, 2], (train_ratings[:, 0], train_ratings[:, 1])),
+            (coo_data, (coo_rows, coo_cols)),
             shape=[adj_size, adj_size], dtype=np.float32
         )
     else:
@@ -70,10 +75,8 @@ def load_train_test_ratings(
             (train_ratings[pos_idx, 2], (train_ratings[pos_idx, 0], train_ratings[pos_idx, 1])),
             shape=[adj_size, adj_size], dtype=np.float32
         )
-
-    # Introduce symmetry
-    if symmetric_adjacency:
-        adj_matrix += adj_matrix.T
+        if symmetric_adjacency:
+            adj_matrix += adj_matrix.T
 
     # Convert to dense matrix
     if not sparse_adjacency:

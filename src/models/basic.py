@@ -3,7 +3,8 @@ import tensorflow as tf
 from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
-from models.gnn import GCN, GAT, GraphSage, LightGCN, KGAT
+from models.gnn import GCN, GAT, GraphSage, LightGCN
+from models.kgnn import KGAT
 
 
 class BasicRS(models.Model):

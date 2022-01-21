@@ -1,6 +1,3 @@
-import warnings
-
-import tensorflow as tf
 from tensorflow.keras.layers import Layer
 
 from spektral.utils.keras import (
@@ -9,7 +6,6 @@ from spektral.utils.keras import (
     is_layer_kwarg,
     serialize_kwarg,
 )
-from spektral.layers.convolutional.conv import check_dtypes_decorator
 
 
 class KConv(Layer):
@@ -23,7 +19,6 @@ class KConv(Layer):
                 attr = deserialize_kwarg(key, attr)
                 self.kwargs_keys.append(key)
                 setattr(self, key, attr)
-        self.call = check_dtypes_decorator(self.call)
 
     def build(self, input_shape):
         self.built = True
@@ -45,21 +40,3 @@ class KConv(Layer):
     @staticmethod
     def preprocess(a):
         return a
-
-
-def check_dtypes(inputs):
-    if len(inputs) == 3:
-        x, r, a = inputs
-    else:
-        return inputs
-
-    if a.dtype not in (tf.int32, tf.int64):
-        warnings.warn(
-            f"The adjacency matrix of dtype {a.dtype} is incompatible with the dtype "
-            f"of the KConv layers, and has been automatically cast to "
-            f"tf.int32."
-        )
-        a = tf.cast(a, tf.int32)
-
-    output = [_ for _ in [x, r, a] if _ is not None]
-    return output
