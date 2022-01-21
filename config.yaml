@@ -14,7 +14,7 @@ model:
   aggregate: mean
   # GAT
   dropout_rate: 0.0
-  # LightGCN
+  # LightGCN, DGCF
   n_layers: 3
   # BasicRS and HybridCBRS
   dense_units: [512, 256, 128]

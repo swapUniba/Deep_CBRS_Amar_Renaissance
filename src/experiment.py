@@ -9,6 +9,7 @@ from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
+from utilities import losses
 from data import loaders
 
 import tensorflow as tf
@@ -26,7 +27,7 @@ import mlflow
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
-MLFLOW_EXP_NAME = 'SIS - Movielens-1M - HybridRS with GNNs'
+MLFLOW_EXP_NAME = 'PROVA'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -133,6 +134,9 @@ class Experimenter:
         else:
             self.model = self.config.model_class(**self.config.model)
 
+        # Instantiate custom loss
+        if hasattr(losses, self.parameters.loss):
+            self.parameters.loss = getattr(losses, self.parameters.loss)()
         # Compile the model
         self.model.compile(
             loss=self.parameters.loss,
