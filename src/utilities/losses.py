@@ -7,11 +7,13 @@ class BPRLoss(keras.losses.Loss):
         super().__init__(name=name)
 
     def call(self, y_true, y_pred):
+        if len(y_pred) % 2 != 0:
+            y_pred = y_pred[:-1]
         half = len(y_pred) // 2
         return - tf.reduce_sum(
             tf.math.log(
                 tf.math.sigmoid(
-                    y_pred[0:half] - y_pred[half:]
+                    y_pred[:half] - y_pred[half:]
                 )
             )
         )
