@@ -2,14 +2,12 @@ grid:
   grid1:
     model:
       name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5]
-      dense_units:  [[48, 48]]
-      clf_units: [[64, 64]]
+      l2_regularizer: [1e-5, 1e-4]
+      dense_units:  [[16, 16]]
+      clf_units: [[32, 32]]
       embedding_dim: [16]
-      n_layers: [2]
+      n_layers: [3, 4]
     dataset:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
       binary_adjacency: [True]
-    parameters:
-      epochs: [1]

@@ -94,4 +94,5 @@ class KGCNConv(Conv):
     def config(self):
         return {
             "channels": self.channels,
+            "return_attn_coef": self.return_attn_coef
         }
