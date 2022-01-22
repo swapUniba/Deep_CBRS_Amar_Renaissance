@@ -1,75 +1,180 @@
 grid:
-#  grid1:
-#    model:
-#      name: [hybrid.HybridBertDGCF]
-#      l2_regularizer: [1e-5, 1e-4, 1e-3]
-#      dense_units:  [[[512, 256, 128], [32, 32], [64, 64]]]
-#      clf_units: [[64, 64]]
-#      embedding_dim: [8]
-#      n_layers: 2
-#    dataset:
-#      load_function_name: [load_user_item_graph_sample]
-#    parameters:
-#      loss: [BPRLoss]
-#  grid2:
-#    model:
-#      name: [hybrid.BasicDGCF]
-#      l2_regularizer: [1e-5, 1e-4, 1e-3]
-#      dense_units:  [[[512, 256, 128], [48, 48], [64, 64]]]
-#      clf_units: [[64, 64]]
-#      embedding_dim: [16]
-#      n_layers: 2
-#    dataset:
-#      load_function_name: [load_user_item_graph_sample]
-#    parameters:
-#      loss: [BPRLoss]
-#  grid3:
-#    model:
-#      name: [hybrid.BasicDGCF]
-#      l2_regularizer: [1e-5, 1e-4, 1e-3]
-#      dense_units:  [[[512, 256, 128], [64, 64], [64, 64]]]
-#      clf_units: [[64, 64]]
-#      embedding_dim: [32]
-#      n_layers: 2
-#    dataset:
-#      load_function_name: [load_user_item_graph_sample]
-#    parameters:
-#      loss: [BPRLoss]
+  grid1:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [32, 32], [64, 64]]]
+      embedding_dim: [8]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid2:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [48, 48], [64, 64]]]
+      embedding_dim: [16]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid3:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [64, 64], [64, 64]]]
+      embedding_dim: [32]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
 
   grid4:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [32, 32], [64, 64]]]
+      embedding_dim: [8]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid5:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [64, 64], [64, 64]]]
+      embedding_dim: [16]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid6:
+    model:
+      name: [hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[[512, 256, 128], [128, 128], [64, 64]]]
+      embedding_dim: [32]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+
+  grid7:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
       dense_units:  [[24, 24]]
-      clf_units: [[64, 64]]
       embedding_dim: [8]
-      n_layers: 2
+      n_layers: [2]
     dataset:
-      load_function_name: [load_user_item_graph_sample]
-    parameters:
-      loss: [BPRLoss]
-  grid5:
+      load_function_name: [load_user_item_graph]
+  grid8:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
       dense_units:  [[48, 48]]
-      clf_units: [[64, 64]]
       embedding_dim: [16]
-      n_layers: 2
+      n_layers: [2]
     dataset:
-      load_function_name: [load_user_item_graph_sample]
-    parameters:
-      loss: [BPRLoss]
-  grid6:
+      load_function_name: [load_user_item_graph]
+  grid9:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
       dense_units:  [[96, 48]]
-      clf_units: [[64, 64]]
       embedding_dim: [32]
-      n_layers: 2
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+
+  grid10:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[24, 24]]
+      embedding_dim: [8]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+  grid11:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[64, 64]]
+      embedding_dim: [16]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+  grid12:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[128, 64]]
+      embedding_dim: [32]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+
+  grid13:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[24, 24]]
+      embedding_dim: [8]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph_sample]
+    parameters:
+      loss: [BPRLoss]
+  grid14:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[48, 48]]
+      embedding_dim: [16]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph_sample]
+    parameters:
+      loss: [BPRLoss]
+  grid15:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[96, 48]]
+      embedding_dim: [32]
+      n_layers: [3]
     dataset:
       load_function_name: [load_user_item_graph_sample]
     parameters:
       loss: [BPRLoss]
 
+  grid16:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[24, 24]]
+      embedding_dim: [8]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_sample]
+    parameters:
+      loss: [BPRLoss]
+  grid17:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[48, 48]]
+      embedding_dim: [16]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_sample]
+    parameters:
+      loss: [BPRLoss]
+  grid18:
+    model:
+      name: [basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[96, 48]]
+      embedding_dim: [32]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph_sample]
+    parameters:
+      loss: [BPRLoss]
