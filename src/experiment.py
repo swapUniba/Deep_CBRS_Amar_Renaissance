@@ -9,6 +9,7 @@ from utilities.keras import get_total_parameters, LogCallback
 from models.basic import BasicRS, BasicGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
+from utilities import losses
 from data import loaders
 
 import tensorflow as tf
@@ -133,6 +134,9 @@ class Experimenter:
         else:
             self.model = self.config.model_class(**self.config.model)
 
+        # Instantiate custom loss
+        if hasattr(losses, self.parameters.loss):
+            self.parameters.loss = getattr(losses, self.parameters.loss)()
         # Compile the model
         self.model.compile(
             loss=self.parameters.loss,
