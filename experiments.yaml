@@ -3,7 +3,7 @@ grid:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[24, 24]]
+      dense_units:  [[32, 32]]
       embedding_dim: [8]
       n_layers: [3]
     dataset:
@@ -14,7 +14,7 @@ grid:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[48, 48]]
+      dense_units:  [[64, 64]]
       embedding_dim: [16]
       n_layers: [3]
     dataset:
@@ -25,7 +25,7 @@ grid:
     model:
       name: [basic.BasicDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[96, 48]]
+      dense_units:  [[128, 64]]
       embedding_dim: [32]
       n_layers: [3]
     dataset:
