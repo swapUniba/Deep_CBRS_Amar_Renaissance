@@ -1,6 +1,7 @@
 import random
 import itertools as it
 import collections
+import time
 
 import numpy as np
 from tensorflow.keras import utils
@@ -252,8 +253,8 @@ class UserItemGraphPosNegSample(utils.Sequence):
         self.adj_matrix = pos_adj_matrix
 
         # Get users and items contiguous IDs
-        contig_users = set(range(len(users)))
-        contig_items = set(range(len(users), len(users) + len(items)))
+        self.contig_users = list(range(len(users)))
+        self.contig_items = set(range(len(users), len(users) + len(items)))
 
         # Set other settings
         self.batch_size = batch_size
@@ -264,15 +265,19 @@ class UserItemGraphPosNegSample(utils.Sequence):
                     it.groupby(sorted(pos_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
         neg_dict = {k: [item for user, item in v] for k, v in
                     it.groupby(sorted(neg_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
+        self.i = ([], [], [], [])
 
         def sample_negatives(user, positives):
             negatives = neg_dict.get(user)
             if negatives:
                 return negatives
-            return self.random_state.choice(list(set(contig_items) - set(positives)), size=sample_size)
+            return self.random_state.choice(list(set(self.contig_items) - set(positives)), size=sample_size)
 
-        self.user_item_dict = {user: (pos_dict[user], sample_negatives(user, pos_dict[user]))
-                               for user in contig_users}
+        self.user_item_dict = [
+            (pos_dict[user], sample_negatives(user, pos_dict[user]))
+                               for user in self.contig_users]
+        self.user_item_dict = np.array(self.user_item_dict)
+        print()
 
     def __getitem__(self, idx):
         """
@@ -282,12 +287,43 @@ class UserItemGraphPosNegSample(utils.Sequence):
         :return: A pair consisting of User-Item IDs and the ratings.
 
         """
-        batch_users = self.random_state.choice(self.users, size=self.batch_size // 2)
-        pos_ratings = [(user, self.random_state.choice(self.user_item_dict[user][0], 1), 1) for user in batch_users]
-        neg_ratings = [(user, self.random_state.choice(self.user_item_dict[user][1], 1), 0) for user in batch_users]
-        pos_ratings.extend(neg_ratings)
-        ratings = np.array(pos_ratings, dtype='int32')
-        return (ratings[:, 0], ratings[:, 1]), ratings[:, 2]
+        start = time.perf_counter()
+        batch_users = self.random_state.choice(self.contig_users, size=self.batch_size // 2)
+        perf = time.perf_counter() - start
+
+        start1 = time.perf_counter()
+        pos_items = np.fromiter(
+            (self.random_state.choice(self.user_item_dict[user][0], 1) for user in batch_users),
+            dtype='int32')
+        perf1 = time.perf_counter() - start1
+
+        start2 = time.perf_counter()
+        neg_items = np.fromiter(
+            (self.random_state.choice(self.user_item_dict[user][1], 1) for user in batch_users),
+            dtype='int32')
+        perf2 = time.perf_counter() - start2
+
+        start3 = time.perf_counter()
+        items = np.concatenate([pos_items, neg_items])
+        users = np.repeat(batch_users, 2)
+        ratings = np.concatenate([np.full(self.batch_size // 2, 1), np.full(self.batch_size // 2, 0)])
+        perf3 = time.perf_counter() - start3
+
+        if len(self.i[0]) == 20:
+            print('eff us sampling {} pos sampling {} neg sampling {} extend {} tot {}'.format(
+                np.mean(self.i[0]),
+                np.mean(self.i[1]),
+                np.mean(self.i[2]),
+                np.mean(self.i[3]),
+                np.sum([np.mean(temp) for temp in self.i])
+            ))
+            self.i = ([], [], [], [])
+        else:
+            self.i[0].append(perf)
+            self.i[1].append(perf1)
+            self.i[2].append(perf2)
+            self.i[3].append(perf3)
+        return (users, items), ratings
 
     def __len__(self):
         """
