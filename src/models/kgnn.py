@@ -69,8 +69,12 @@ class KGCN(models.Model):
 
     def call(self, inputs, **kwargs):
         x = self.embeddings
+        hs = [x]
         for gnn in self.kgnn_layers:
             x = gnn([x, self.rel_embeddings, self.adj_matrix])
             if self.dropout is not None:
                 x = self.dropout(x)
-        return x
+            hs.append(x)
+
+        # Reduce the outputs of each GCN layer
+        return self.reduce(hs)
