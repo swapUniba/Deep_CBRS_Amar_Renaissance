@@ -4,7 +4,7 @@ from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN
-from models.kgnn import KGAT
+from models.kgnn import KGCN
 
 
 class BasicRS(models.Model):
@@ -109,10 +109,10 @@ class BasicLightGCN(BasicGNN):
         self.gnn = LightGCN(*args, **kwargs)
 
 
-class BasicKGAT(BasicGNN):
+class BasicKGCN(BasicGNN):
     def __init__(self, *args, **kwargs):
         """
-        Initialize a Basic recommender system based on Knowledge Graph Attention Networks (KGAT).
+        Initialize a Basic recommender system based on Knowledge Graph Convolutional Networks (KGCNs).
         """
         super().__init__(**kwargs)
-        self.gnn = KGAT(*args, **kwargs)
+        self.gnn = KGCN(*args, **kwargs)

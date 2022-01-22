@@ -1,9 +1,10 @@
 import tensorflow as tf
+from spektral.layers import ops
 
 from spektral.layers.convolutional.conv import Conv
 
 
-class KGATConv(Conv):
+class KGCNConv(Conv):
     def __init__(
         self,
         channels,
@@ -32,11 +33,11 @@ class KGATConv(Conv):
             **kwargs
         )
         self.channels = channels
+        self.output_dim = channels
         self.return_attn_coef = return_attn_coef
-        self.output_dim = self.channels
 
     def build(self, input_shape):
-        assert len(input_shape) == 2
+        assert len(input_shape) == 3
         input_dim = input_shape[0][1]
 
         self.kernel = self.add_weight(
@@ -57,13 +58,26 @@ class KGATConv(Conv):
         self.built = True
 
     def call(self, inputs, mask=None):
-        x, attn_coef = inputs
+        x, r, a = inputs
 
-        # Compute a weighted sum using the attention values
-        attn_neigh = tf.sparse.sparse_dense_matmul(attn_coef, x)
+        # Get the sources, targets and relation values from the adjacency sparse matrix
+        indices, values = a.indices, a.values
+        targets, sources = indices[:, 1], indices[:, 0]
+
+        # Compute the scores between entities and relations using a dot product (Eq. 1)
+        pi = tf.einsum('hi,ki->hk', x, r)
+        attn_coef = tf.gather_nd(pi, tf.stack([sources, values], axis=1))
+
+        # Compute the attention coefficients by softmax w.r.t. the source entities (Eq. 3)
+        attn_coef = ops.unsorted_segment_softmax(attn_coef, sources, x.shape[0])
+        attn_coef = tf.expand_dims(attn_coef, axis=1)
+
+        # Compute the weighted sum of neighbours using attention coefficients (Eq. 2)
+        output = attn_coef * tf.gather(x, targets)
+        output = tf.math.unsorted_segment_sum(output, sources, x.shape[0])
 
         # Compute the final nodes embeddings (GCN way)
-        output = tf.matmul(attn_neigh, self.kernel)
+        output = tf.matmul(output + x, self.kernel)
 
         # Apply bias and activation function
         if self.use_bias:
@@ -71,9 +85,6 @@ class KGATConv(Conv):
         if mask is not None:
             output *= mask[0]
         output = self.activation(output)
-
-        # Apply L2 normalization
-        output = tf.math.l2_normalize(output, axis=1)
 
         if self.return_attn_coef:
             return output, attn_coef
