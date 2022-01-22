@@ -6,6 +6,7 @@ from tensorflow.keras import models, layers, regularizers
 
 from utilities.math import convert_to_tensor
 from layers.kgcn_conv import KGCNConv
+from layers.reduction import ReductionLayer
 
 
 class KGCN(models.Model):
@@ -14,6 +15,7 @@ class KGCN(models.Model):
         adj_matrix,
         n_layers=2,
         embedding_dim=8,
+        final_node="concatenation",
         dropout=None,
         l2_regularizer=None,
         **kwargs
@@ -43,7 +45,7 @@ class KGCN(models.Model):
         n_relations = len(np.unique(adj_matrix.data))
         self.rel_embeddings = self.add_weight(
             name='rel_embeddings',
-            shape=(n_relations, embedding_dim),
+            shape=(n_relations + 1, embedding_dim),  # +1 because relation IDs start by one
             initializer='glorot_uniform',
             regularizer=regularizer
         )
@@ -52,15 +54,18 @@ class KGCN(models.Model):
         self.kgnn_layers = [
             KGCNConv(
                 embedding_dim,
-                activation='relu' if i == n_layers - 1 else 'tanh',
+                activation='relu',
                 kernel_regularizer=regularizer,
                 bias_regularizer=regularizer
             )
-            for i in range(n_layers)
+            for _ in range(n_layers)
         ]
 
         # Build the dropout layer
         self.dropout = layers.Dropout(dropout) if dropout else None
+
+        # Build the reduction layer
+        self.reduce = ReductionLayer(final_node)
 
     def call(self, inputs, **kwargs):
         x = self.embeddings

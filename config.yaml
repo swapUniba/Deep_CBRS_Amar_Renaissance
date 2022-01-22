@@ -14,7 +14,7 @@ model:
   aggregate: mean
   # GAT
   dropout_rate: 0.0
-  # LightGCN, DGCF
+  # LightGCN, DGCF, KGCN
   n_layers: 3
   # BasicRS and HybridCBRS
   dense_units: [512, 256, 128]
@@ -24,15 +24,15 @@ model:
 
 dataset:
   load_function_name: load_graph_embeddings
-  # For adjacency matrix related datasets function name
-  props_triples_filepath: null
-  binary_adjacency: False
+  type_adjacency: unary
   sparse_adjacency: True
   symmetric_adjacency: True
   # Basic or Hybrid embeddings datasets
   graph_filepath: embeddings/user-item/768TransH.json
   bert_user_filepath: embeddings/bert/user-lastlayer.json
   bert_item_filepath: embeddings/bert/item-lastlayer.json
+  # For including properties in the adjacency matrix related to KGNN loaders
+  props_triples_filepath: null
   # For all the datasets
   train_ratings_filepath: datasets/movielens/train2id.tsv
   test_ratings_filepath: datasets/movielens/test2id.tsv

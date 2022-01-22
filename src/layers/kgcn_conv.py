@@ -65,7 +65,7 @@ class KGCNConv(Conv):
         targets, sources = indices[:, 1], indices[:, 0]
 
         # Compute the scores between entities and relations using a dot product (Eq. 1)
-        pi = tf.einsum('hi,ki->hk', x, r)
+        pi = tf.einsum('ij,rj->ir', x, r)
         attn_coef = tf.gather_nd(pi, tf.stack([sources, values], axis=1))
 
         # Compute the attention coefficients by softmax w.r.t. the source entities (Eq. 3)
