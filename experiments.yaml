@@ -6,7 +6,7 @@ grid:
       dense_units:  [[64, 64]]
       clf_units: [[64, 64]]
       embedding_dim: [16]
-      n_layers: [3]
+      n_layers: [3, 4]
     dataset:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
