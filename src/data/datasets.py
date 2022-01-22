@@ -251,6 +251,10 @@ class UserItemGraphPosNegSample(utils.Sequence):
                                            )
         self.adj_matrix = pos_adj_matrix
 
+        # Get users and items contiguous IDs
+        contig_users = set(range(len(users)))
+        contig_items = set(range(len(users), len(users) + len(items)))
+
         # Set other settings
         self.batch_size = batch_size
         self.seed = seed
@@ -265,10 +269,10 @@ class UserItemGraphPosNegSample(utils.Sequence):
             negatives = neg_dict.get(user)
             if negatives:
                 return negatives
-            return self.random_state.choice(list(set(self.items) - set(positives)), size=sample_size)
+            return self.random_state.choice(list(set(contig_items) - set(positives)), size=sample_size)
 
         self.user_item_dict = {user: (pos_dict[user], sample_negatives(user, pos_dict[user]))
-                               for user in users}
+                               for user in contig_users}
 
     def __getitem__(self, idx):
         """
