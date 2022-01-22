@@ -261,23 +261,21 @@ class UserItemGraphPosNegSample(utils.Sequence):
         self.seed = seed
         self.random_state = np.random.RandomState(seed)
         # Group positive and negative items for each user
-        pos_dict = {k: [item for user, item in v] for k, v in
+        pos_dict = {k: np.fromiter((item for user, item in v), dtype='int32') for k, v in
                     it.groupby(sorted(pos_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
-        neg_dict = {k: [item for user, item in v] for k, v in
+        neg_dict = {k: np.fromiter((item for user, item in v), dtype='int32') for k, v in
                     it.groupby(sorted(neg_adj_dict.keys(), key=lambda x: x[0]), key=lambda x: x[0])}
         self.i = ([], [], [], [])
 
         def sample_negatives(user, positives):
             negatives = neg_dict.get(user)
-            if negatives:
+            if negatives is not None:
                 return negatives
             return self.random_state.choice(list(set(self.contig_items) - set(positives)), size=sample_size)
 
         self.user_item_dict = [
             (pos_dict[user], sample_negatives(user, pos_dict[user]))
                                for user in self.contig_users]
-        self.user_item_dict = np.array(self.user_item_dict)
-        print()
 
     def __getitem__(self, idx):
         """
@@ -287,42 +285,20 @@ class UserItemGraphPosNegSample(utils.Sequence):
         :return: A pair consisting of User-Item IDs and the ratings.
 
         """
-        start = time.perf_counter()
         batch_users = self.random_state.choice(self.contig_users, size=self.batch_size // 2)
-        perf = time.perf_counter() - start
 
-        start1 = time.perf_counter()
         pos_items = np.fromiter(
-            (self.random_state.choice(self.user_item_dict[user][0], 1) for user in batch_users),
+            (self.random_state.choice(self.user_item_dict[user][0]) for user in batch_users),
             dtype='int32')
-        perf1 = time.perf_counter() - start1
 
-        start2 = time.perf_counter()
         neg_items = np.fromiter(
-            (self.random_state.choice(self.user_item_dict[user][1], 1) for user in batch_users),
+            (self.random_state.choice(self.user_item_dict[user][1]) for user in batch_users),
             dtype='int32')
-        perf2 = time.perf_counter() - start2
 
-        start3 = time.perf_counter()
         items = np.concatenate([pos_items, neg_items])
         users = np.repeat(batch_users, 2)
         ratings = np.concatenate([np.full(self.batch_size // 2, 1), np.full(self.batch_size // 2, 0)])
-        perf3 = time.perf_counter() - start3
 
-        if len(self.i[0]) == 20:
-            print('eff us sampling {} pos sampling {} neg sampling {} extend {} tot {}'.format(
-                np.mean(self.i[0]),
-                np.mean(self.i[1]),
-                np.mean(self.i[2]),
-                np.mean(self.i[3]),
-                np.sum([np.mean(temp) for temp in self.i])
-            ))
-            self.i = ([], [], [], [])
-        else:
-            self.i[0].append(perf)
-            self.i[1].append(perf1)
-            self.i[2].append(perf2)
-            self.i[3].append(perf3)
         return (users, items), ratings
 
     def __len__(self):
