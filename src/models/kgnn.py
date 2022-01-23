@@ -2,21 +2,19 @@ import numpy as np
 import tensorflow as tf
 
 from scipy import sparse
-from tensorflow.keras import models, layers, regularizers
+from tensorflow.keras import models, regularizers
 
 from utilities.math import convert_to_tensor
 from layers.kgcn_conv import KGCNConv
-from layers.reduction import ReductionLayer
 
 
 class KGCN(models.Model):
     def __init__(
         self,
+        n_users,
         adj_matrix,
         n_layers=2,
         embedding_dim=8,
-        final_node="concatenation",
-        dropout=None,
         l2_regularizer=None,
         **kwargs
     ):
@@ -33,10 +31,19 @@ class KGCN(models.Model):
         else:
             regularizer = None
 
-        # Initialize the entities embedding weights
-        self.embeddings = self.add_weight(
+        # Initialize the users embedding weights
+        self.user_embeddings = self.add_weight(
+            name='user_embeddings',
+            shape=(n_users, embedding_dim),
+            initializer='glorot_uniform',
+            regularizer=regularizer
+        )
+
+        # Initialize the entity embedding weights
+        n_entities = adj_matrix.shape[0]
+        self.ent_embeddings = self.add_weight(
             name='ent_embeddings',
-            shape=(adj_matrix.shape[0], embedding_dim),
+            shape=(n_entities, embedding_dim),
             initializer='glorot_uniform',
             regularizer=regularizer
         )
@@ -54,27 +61,17 @@ class KGCN(models.Model):
         self.kgnn_layers = [
             KGCNConv(
                 embedding_dim,
-                activation='relu',
+                activation='relu' if i == n_layers - 1 else 'tanh',
                 kernel_regularizer=regularizer,
                 bias_regularizer=regularizer
             )
-            for _ in range(n_layers)
+            for i in range(n_layers)
         ]
 
-        # Build the dropout layer
-        self.dropout = layers.Dropout(dropout) if dropout else None
-
-        # Build the reduction layer
-        self.reduce = ReductionLayer(final_node)
-
     def call(self, inputs, **kwargs):
-        x = self.embeddings
-        hs = [x]
+        x = self.ent_embeddings
         for gnn in self.kgnn_layers:
             x = gnn([x, self.rel_embeddings, self.adj_matrix])
-            if self.dropout is not None:
-                x = self.dropout(x)
-            hs.append(x)
 
-        # Reduce the outputs of each GCN layer
-        return self.reduce(hs)
+        # Concat the user and (updated) entities embeddings
+        return tf.concat([self.user_embeddings, x], axis=0)

@@ -6,7 +6,7 @@ from time import strftime
 from utilities.utils import \
     get_experiment_logger, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from utilities.keras import get_total_parameters, LogCallback
-from models.basic import BasicRS, BasicGNN
+from models.basic import BasicRS, BasicGNN, BasicKGCN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
 from utilities import losses
@@ -129,7 +129,9 @@ class Experimenter:
         self.logger.info('Building model...')
 
         # Additional parameter for GNNs
-        if issubclass(self.config.model_class, BasicGNN) or issubclass(self.config.model_class, HybridBertGNN):
+        if issubclass(self.config.model_class, BasicKGCN):
+            self.model = self.config.model_class(len(self.trainset.users), self.trainset.adj_matrix, **self.config.model)
+        elif issubclass(self.config.model_class, BasicGNN) or issubclass(self.config.model_class, HybridBertGNN):
             self.model = self.config.model_class(self.trainset.adj_matrix, **self.config.model)
         else:
             self.model = self.config.model_class(**self.config.model)

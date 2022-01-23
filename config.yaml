@@ -33,8 +33,6 @@ dataset:
   bert_item_filepath: embeddings/bert/item-lastlayer.json
   # For including properties in the adjacency matrix related to KGNN loaders
   props_triples_filepath: null
-  # For KGCN only model, neighbours sampling
-  n_sample_neighbours: null
   # For all the datasets
   train_ratings_filepath: datasets/movielens/train2id.tsv
   test_ratings_filepath: datasets/movielens/test2id.tsv
