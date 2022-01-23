@@ -45,7 +45,7 @@ class KGCN(models.Model):
         n_relations = len(np.unique(adj_matrix.data))
         self.rel_embeddings = self.add_weight(
             name='rel_embeddings',
-            shape=(n_relations + 1, embedding_dim),  # +1 because relation IDs start by one
+            shape=(n_relations, embedding_dim),
             initializer='glorot_uniform',
             regularizer=regularizer
         )

@@ -2,7 +2,33 @@ grid:
   grid1:
     model:
       name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      l2_regularizer: [1e-5, 1e-4]
+      dense_units:  [[24, 24]]
+      clf_units: [[32, 32]]
+      embedding_dim: [8]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [relational]
+      n_sample_neighbours: [4, 8, 16]
+  grid2:
+    model:
+      name: [basic.BasicKGCN]
+      l2_regularizer: [1e-5, 1e-4]
+      dense_units:  [[48, 48]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [relational]
+      n_sample_neighbours: [4, 8, 16]
+  grid3:
+    model:
+      name: [basic.BasicKGCN]
+      l2_regularizer: [1e-5, 1e-4]
       dense_units:  [[32, 32]]
       clf_units: [[64, 64]]
       embedding_dim: [8]
@@ -11,10 +37,11 @@ grid:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
       type_adjacency: [relational]
-  grid2:
+      n_sample_neighbours: [4, 8, 16]
+  grid4:
     model:
       name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      l2_regularizer: [1e-5, 1e-4]
       dense_units:  [[64, 64]]
       clf_units: [[64, 64]]
       embedding_dim: [16]
@@ -23,3 +50,4 @@ grid:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
       type_adjacency: [relational]
+      n_sample_neighbours: [4, 8, 16]

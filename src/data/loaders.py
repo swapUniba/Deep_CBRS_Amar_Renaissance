@@ -17,7 +17,8 @@ def build_adjacency_matrix(
         props=None,
         type_adjacency='unary',
         sparse_adjacency=True,
-        symmetric_adjacency=True
+        symmetric_adjacency=True,
+        n_sample_neighbours=None
 ):
     """
     :param bi_ratings: The bipartite ratings as a matrix associating to users and items a 0-1 rating.
@@ -30,6 +31,8 @@ def build_adjacency_matrix(
                            props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
+    :param n_sample_neighbours: The fixed number of neighbours to sample for each node. It can be None. It is used only
+                                if type_adjacency is 'relational'.
     :return: The adjacency matrix.
     """
     # Compute the dimensions of the adjacency matrix
@@ -56,9 +59,8 @@ def build_adjacency_matrix(
                 raise ValueError("Relational adjacency matrix requires properties info")
             if props is not None:
                 adj_size += len(props)  # Update the size of the adjacency matrix
-            pos_idx = bi_ratings[:, 2] == 1
-            coo_data = bi_ratings[pos_idx, 2]
-            coo_rows, coo_cols = bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1]
+            coo_data = bi_ratings[:, 2]
+            coo_rows, coo_cols = bi_ratings[:, 0], bi_ratings[:, 1]
 
             # Include properties triples
             prop_coo_data = props_triples[:, 2]
@@ -66,6 +68,22 @@ def build_adjacency_matrix(
             coo_data = np.concatenate([coo_data, prop_coo_data])
             coo_rows = np.concatenate([coo_rows, prop_coo_rows])
             coo_cols = np.concatenate([coo_cols, prop_coo_cols])
+
+            # Sample a fixed number of neighbours for each node
+            if n_sample_neighbours is not None:
+                mask = []
+                random_state = np.random.RandomState(1816)
+                for e in np.unique(coo_rows):
+                    neigh = coo_cols[coo_rows == e]
+                    if len(neigh) <= n_sample_neighbours:
+                        mask.append(np.ones(len(neigh), dtype=np.bool_))
+                        continue
+                    m = np.zeros(len(neigh), dtype=np.bool_)
+                    m[random_state.choice(len(neigh), n_sample_neighbours, replace=False)] = True
+                    mask.append(m)
+                mask = np.concatenate(mask, axis=0)
+                coo_data = coo_data[mask]
+                coo_rows, coo_cols = coo_rows[mask], coo_cols[mask]
         else:
             raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
 
@@ -98,7 +116,8 @@ def load_train_test_ratings(
         return_adjacency=False,
         type_adjacency='unary',
         sparse_adjacency=True,
-        symmetric_adjacency=True
+        symmetric_adjacency=True,
+        n_sample_neighbours=None
 ):
     """
     Load train and test ratings. Note that the user and item IDs are converted to sequential numbers.
@@ -114,6 +133,8 @@ def load_train_test_ratings(
                            include relations for triples. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
+    :param n_sample_neighbours: The fixed number of neighbours to sample for each node. It can be None. It is used only
+                                if type_adjacency is 'relational'.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
              Moreover, it returns the users and items original unique IDs. Additionally, it also returns the training
              interactions adjacency matrix (assuming un-directed arcs).
@@ -157,7 +178,8 @@ def load_train_test_ratings(
         props_triples=props_triples, props=props,
         type_adjacency=type_adjacency,
         sparse_adjacency=sparse_adjacency,
-        symmetric_adjacency=symmetric_adjacency
+        symmetric_adjacency=symmetric_adjacency,
+        n_sample_neighbours=n_sample_neighbours
     )
 
     return (train_ratings, test_ratings), (users, items), adj_matrix
@@ -333,6 +355,7 @@ def load_user_item_graph(
         type_adjacency='unary',
         sparse_adjacency=True,
         symmetric_adjacency=True,
+        n_sample_neighbours=None,
         shuffle=True,
         train_batch_size=1024,
         test_batch_size=2048
@@ -351,6 +374,8 @@ def load_user_item_graph(
                            include relations for triples. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
+    :param n_sample_neighbours: The fixed number of neighbours to sample for each node. It can be None. It is used only
+                                if type_adjacency is 'relational'.
     :param shuffle: Tells if shuffle the training dataset.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
@@ -364,7 +389,8 @@ def load_user_item_graph(
                                 return_adjacency=True,
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
-                                symmetric_adjacency=symmetric_adjacency)
+                                symmetric_adjacency=symmetric_adjacency,
+                                n_sample_neighbours=n_sample_neighbours)
     data_train = UserItemGraph(
         train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size, shuffle=shuffle
@@ -384,6 +410,7 @@ def load_user_item_graph_sample(
         type_adjacency='binary',
         sparse_adjacency=True,
         symmetric_adjacency=True,
+        n_sample_neighbours=None,
         train_batch_size=1024,
         test_batch_size=2048
 ):
@@ -401,6 +428,8 @@ def load_user_item_graph_sample(
                            include relations for triples. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
+    :param n_sample_neighbours: The fixed number of neighbours to sample for each node. It can be None. It is used only
+                                if type_adjacency is 'relational'.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
     :return: The training and test ratings data sequence for GNN-based models.
@@ -413,7 +442,8 @@ def load_user_item_graph_sample(
                                 return_adjacency=True,
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
-                                symmetric_adjacency=symmetric_adjacency)
+                                symmetric_adjacency=symmetric_adjacency,
+                                n_sample_neighbours=n_sample_neighbours)
     data_train = UserItemGraphPosNegSample(
         train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size
