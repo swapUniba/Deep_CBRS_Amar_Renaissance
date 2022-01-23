@@ -145,7 +145,7 @@ def load_train_test_ratings(
         rels, rels_indexes = np.unique(props_triples[:, 2], return_inverse=True)
         items_indexes += len(users)
         props_indexes += len(users) + len(items)
-        rels_indexes += 1  # We already have ratings for users and items
+        rels_indexes += 2  # We already have ratings as properties for users and items
         props_triples = np.stack([items_indexes, props_indexes, rels_indexes], axis=1)
     else:
         props = None
