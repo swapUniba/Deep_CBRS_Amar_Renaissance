@@ -3,6 +3,7 @@ import abc
 import tensorflow as tf
 
 from scipy import sparse
+from spektral.layers import GATConv
 from tensorflow.keras import models, regularizers, layers
 
 from spektral.layers.convolutional import GCNConv
@@ -224,3 +225,36 @@ class TwoStepGraphSage(TwoStepGNN):
             adj_matrices,
             len(n_hiddens),
             **kwargs)
+
+
+class TwoStepGAT(TwoStepGNN):
+    def __init__(
+            self,
+            adj_matrix,
+            n_hiddens=(8, 8, 8),
+            dropout_rate=0.0,
+            **kwargs
+    ):
+        """
+        Initialize a TwoStep Graph Attention Networks (GAT).
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GAT layer.
+        :param dropout_rate: The dropout rate to apply to the attention coefficients in GAT.
+        """
+        self.n_hiddens = n_hiddens
+        self.dropout_rate = dropout_rate
+
+        super().__init__(
+            adj_matrix,
+            len(n_hiddens),
+            **kwargs)
+
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
+        return GATConv(
+            self.n_hiddens[i],
+            dropout_rate=self.dropout_rate,
+            activation='relu',
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
+        )
