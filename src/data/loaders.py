@@ -5,8 +5,9 @@ import numpy as np
 
 from scipy import sparse
 
-from data.datasets import UserItemEmbeddings, HybridUserItemEmbeddings, UserItemGraph, UserItemGraphEmbeddings, \
-    UserItemGraphPosNegSample
+from utilities.math import symmetrize_matrix
+from data.datasets import UserItemEmbeddings, HybridUserItemEmbeddings
+from data.datasets import UserItemGraph, UserItemGraphEmbeddings, UserItemGraphPosNegSample
 
 
 def build_adjacency_matrix(
@@ -26,12 +27,13 @@ def build_adjacency_matrix(
     :param props_triples: The knowledge graph triples of items and properties. It can be None.
     :param props: A sequence of properties IDs. It can be None.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'relational' if you need to
-                           the matrix of relations for triples. In the latter case it requires props and props_triples.
+                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
+                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :return: The adjacency matrix.
     """
+    # Unary adjacency matrix (only positive ratings)
     if type_adjacency == 'unary':
         # Compute the dimensions of the adjacency matrix
         adj_size = len(users) + len(items)
@@ -45,36 +47,21 @@ def build_adjacency_matrix(
 
         # Make the matrix symmetric
         if symmetric_adjacency:
-            adj_matrix += adj_matrix.T
-    else:
-        if type_adjacency == 'binary':
-            # Compute the dimensions of the adjacency matrix
-            adj_size = len(users) + len(items)
+            adj_matrix = symmetrize_matrix(adj_matrix)
 
-            # Set the data of the matrix
-            coo_data = bi_ratings[:, 2]
-            coo_rows, coo_cols = bi_ratings[:, 0], bi_ratings[:, 1]
-        elif type_adjacency == 'relational':
-            if props is None or props_triples is None:
-                raise ValueError("Relational adjacency matrix requires properties info")
+        # Convert to dense matrix, if specified
+        if not sparse_adjacency:
+            adj_matrix = adj_matrix.todense()
+        return adj_matrix
 
-            # Compute the dimensions of the adjacency matrix
-            adj_size = len(items) + len(props)
+    # Binary adjacency matrix (both positive and negative ratings)
+    if type_adjacency == 'binary':
+        # Compute the dimensions of the adjacency matrix
+        adj_size = len(users) + len(items)
 
-            # Set the data of the matrix
-            coo_data = props_triples[:, 2]
-            coo_rows, coo_cols = props_triples[:, 0], props_triples[:, 1]
-            print(coo_data.shape, coo_rows.shape, coo_cols.shape)
-        else:
-            raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
-
-        # Make the matrix symmetric
-        if symmetric_adjacency:
-            coo_data = np.concatenate([coo_data, coo_data])
-            new_coo_rows = np.concatenate([coo_rows, coo_cols])
-            new_coo_cols = np.concatenate([coo_cols, coo_rows])
-            coo_rows = new_coo_rows
-            coo_cols = new_coo_cols
+        # Set the data of the matrix
+        coo_data = bi_ratings[:, 2]
+        coo_rows, coo_cols = bi_ratings[:, 0], bi_ratings[:, 1]
 
         # Instantiate the sparse adjacency matrix
         adj_matrix = sparse.coo_matrix(
@@ -82,11 +69,51 @@ def build_adjacency_matrix(
             shape=[adj_size, adj_size], dtype=np.float32
         )
 
-    # Convert to dense matrix, if specified
-    if not sparse_adjacency:
-        adj_matrix = adj_matrix.todense()
+        # Make the matrix symmetric
+        if symmetric_adjacency:
+            adj_matrix = symmetrize_matrix(adj_matrix)
 
-    return adj_matrix
+        # Convert to dense matrix, if specified
+        if not sparse_adjacency:
+            adj_matrix = adj_matrix.todense()
+        return adj_matrix
+
+    # Unary KG adjacency matrices (return both unary adjacency matrix and KG adjacency matrix)
+    if type_adjacency == 'unary-kg':
+        if props is None or props_triples is None:
+            raise ValueError("KG adjacency matrix requires properties info")
+
+        # Compute the dimensions of the adjacency matrices
+        adj_bi_size = len(users) + len(items)
+        adj_kg_size = len(items) + len(props)
+
+        # Instantiate the sparse adjacency matrices
+        pos_idx = bi_ratings[:, 2] == 1
+        coo_data = bi_ratings[pos_idx, 2]
+        coo_rows, coo_cols = bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1]
+        adj_bi_matrix = sparse.coo_matrix(
+            (coo_data, (coo_rows, coo_cols)),
+            shape=[adj_bi_size, adj_bi_size], dtype=np.float32
+        )
+        coo_data = props_triples[:, 2]
+        coo_rows, coo_cols = props_triples[:, 0], props_triples[:, 1]
+        adj_kg_matrix = sparse.coo_matrix(
+            (coo_data, (coo_rows, coo_cols)),
+            shape=[adj_kg_size, adj_kg_size], dtype=np.float32
+        )
+
+        # Make the matrices symmetric
+        if symmetric_adjacency:
+            adj_bi_matrix = symmetrize_matrix(adj_bi_matrix)
+            adj_kg_matrix = symmetrize_matrix(adj_kg_matrix)
+
+        # Convert to dense matrices, if specified
+        if not sparse_adjacency:
+            adj_bi_matrix = adj_bi_matrix.todense()
+            adj_kg_matrix = adj_kg_matrix.todense()
+        return adj_bi_matrix, adj_kg_matrix
+
+    raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
 
 
 def load_train_test_ratings(
@@ -109,8 +136,8 @@ def load_train_test_ratings(
     :param sep: The separator to use for CSV or TSV files.
     :param return_adjacency: Whether to also return the adjacency matrix.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'relational' if you need to
-                           the matrix of relations for triples. In the latter case it requires props and props_triples.
+                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
+                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
@@ -137,13 +164,13 @@ def load_train_test_ratings(
         return (train_ratings, test_ratings), (users, items)
 
     # Load the properties, if specified
-    if type_adjacency == 'relational' and props_filepath is not None:
+    if type_adjacency == 'unary-kg' and props_filepath is not None:
         props_triples = pd.read_csv(props_filepath, sep=sep, header=None).to_numpy()
         items_indexes = np.argwhere(props_triples[:, [0]] == items)[:, 1]
         props, props_indexes = np.unique(props_triples[:, 1], return_inverse=True)
-        rels, rels_indexes = np.unique(props_triples[:, 2], return_inverse=True)
         props_indexes += len(items)
-        props_triples = np.stack([items_indexes, props_indexes, rels_indexes], axis=1)
+        ones = np.ones(len(props_indexes), dtype=props_triples.dtype)
+        props_triples = np.stack([items_indexes, props_indexes, ones], axis=1)
     else:
         props = None
         props_triples = None
@@ -192,8 +219,6 @@ def load_bert_user_item_embeddings(user_filepath, item_filepath, users, items):
     item_embeddings = np.stack([item_embeddings[i] for i in items])
     return np.concatenate([user_embeddings, item_embeddings], axis=0)
 
-
-# Train, test load functions
 
 def load_graph_embeddings(
         train_ratings_filepath,
@@ -344,8 +369,8 @@ def load_user_item_graph(
                                    return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'relational' if you need to
-                           include relations for triples. In the latter case it requires props and props_triples.
+                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
+                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param shuffle: Tells if shuffle the training dataset.
@@ -394,8 +419,8 @@ def load_user_item_graph_sample(
                                    return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'relational' if you need to
-                           include relations for triples. In the latter case it requires props and props_triples.
+                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
+                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param train_batch_size: batch_size used in training phase.
@@ -448,8 +473,8 @@ def load_user_item_graph_bert_embeddings(
     :param bert_item_filepath: The filepath for Item BERT embeddings.
     :param sep: The separator to use for CSV or TSV files.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'relational' if you need to
-                           include relations for triples. In the latter case it requires props and props_triples.
+                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
+                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param shuffle: Tells if shuffle the training dataset.

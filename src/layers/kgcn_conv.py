@@ -1,14 +1,15 @@
 import tensorflow as tf
-from spektral.layers import ops
 
+from spektral.layers.convolutional import GCNConv
 from spektral.layers.convolutional.conv import Conv
 
 
 class KGCNConv(Conv):
     def __init__(
         self,
+        n_users,
+        n_items,
         channels,
-        return_attn_coef=False,
         activation=None,
         use_bias=True,
         kernel_initializer="glorot_uniform",
@@ -32,17 +33,42 @@ class KGCNConv(Conv):
             bias_constraint=bias_constraint,
             **kwargs
         )
+        self.n_users = n_users
+        self.n_items = n_items
         self.channels = channels
         self.output_dim = channels
-        self.return_attn_coef = return_attn_coef
+
+        # Initialize two GCNs (Bi + KG)
+        gcn_kwargs = {
+            'activation': activation,
+            'use_bias': use_bias,
+            'kernel_initializer': kernel_initializer,
+            'bias_initializer': bias_initializer,
+            'kernel_regularizer': kernel_regularizer,
+            'bias_regularizer': bias_regularizer,
+            'activity_regularizer': activity_regularizer,
+            'kernel_constraint': kernel_constraint,
+            'bias_constraint': bias_constraint
+        }
+        self.gcn_bi = GCNConv(channels, **gcn_kwargs)
+        self.gcn_kg = GCNConv(channels, **gcn_kwargs)
 
     def build(self, input_shape):
-        assert len(input_shape) == 3
+        assert len(input_shape) == 5
+        assert input_shape[0][1] == input_shape[1][1]
+        assert input_shape[0][1] == input_shape[2][1]
+        assert input_shape[3][0] == input_shape[0][0] + input_shape[1][0]
+        assert input_shape[4][0] == input_shape[1][0] + input_shape[2][0]
         input_dim = input_shape[0][1]
+
+        bi_input_shape = (input_shape[0][0] + input_shape[1][0], input_shape[0][1]), input_shape[3]
+        kg_input_shape = (input_shape[1][0] + input_shape[2][0], input_shape[0][1]), input_shape[4]
+        self.gcn_bi.build(bi_input_shape)
+        self.gcn_kg.build(kg_input_shape)
 
         self.kernel = self.add_weight(
             name="kernel",
-            shape=[input_dim, self.output_dim],
+            shape=[input_dim * 2, self.output_dim],
             initializer=self.kernel_initializer,
             regularizer=self.kernel_regularizer,
             constraint=self.kernel_constraint,
@@ -57,42 +83,31 @@ class KGCNConv(Conv):
             )
         self.built = True
 
-    def call(self, inputs, mask=None):
-        x, r, a = inputs
+    def call(self, inputs, **kwargs):
+        u_e, i_e, p_e, a_bi, a_kg = inputs
 
-        # Get the sources, targets and relation values from the adjacency sparse matrix
-        indices, values = a.indices, a.values
-        targets, sources = indices[:, 1], indices[:, 0]
+        # Pass through Bi and KG GCN models
+        x_bi = tf.concat([u_e, i_e], axis=0)
+        x_kg = tf.concat([i_e, p_e], axis=0)
+        x_bi = self.gcn_bi([x_bi, a_bi])
+        x_kg = self.gcn_kg([x_kg, a_kg])
 
-        # Compute the scores between entities and relations using a dot product (Eq. 1)
-        pi = tf.einsum('ij,rj->ir', x, r)
-        attn_coef = tf.gather_nd(pi, tf.stack([sources, values], axis=1))
-
-        # Compute the attention coefficients by softmax w.r.t. the source entities (Eq. 3)
-        attn_coef = ops.unsorted_segment_softmax(attn_coef, sources, x.shape[0])
-        attn_coef = tf.expand_dims(attn_coef, axis=1)
-
-        # Compute the weighted sum of neighbours using attention coefficients (Eq. 2)
-        output = attn_coef * tf.gather(x, targets)
-        output = tf.math.unsorted_segment_sum(output, sources, x.shape[0])
-
-        # Compute the final nodes embeddings (GCN way)
-        output = tf.matmul(output + x, self.kernel)
-
-        # Apply bias and activation function
+        # Re-obtain the user and properties embeddings
+        # The item embeddings are obtained by a non-linear combination of both Bi and KG GCN models
+        u_e = x_bi[:self.n_users]
+        p_e = x_kg[self.n_items:]
+        i_e = tf.concat([x_bi[self.n_users:], x_kg[:self.n_items]], axis=1)
+        i_e = tf.matmul(i_e, self.kernel)
         if self.use_bias:
-            output += self.bias
-        if mask is not None:
-            output *= mask[0]
-        output = self.activation(output)
+            i_e += self.bias
+        i_e = self.activation(i_e)
 
-        if self.return_attn_coef:
-            return output, attn_coef
-        return output
+        return u_e, i_e, p_e
 
     @property
     def config(self):
         return {
-            "channels": self.channels,
-            "return_attn_coef": self.return_attn_coef
+            "n_users": self.n_users,
+            "n_items": self.n_items,
+            "channels": self.channels
         }

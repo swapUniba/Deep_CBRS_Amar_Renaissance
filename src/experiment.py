@@ -130,7 +130,10 @@ class Experimenter:
 
         # Additional parameter for GNNs
         if issubclass(self.config.model_class, BasicKGCN):
-            self.model = self.config.model_class(len(self.trainset.users), self.trainset.adj_matrix, **self.config.model)
+            self.model = self.config.model_class(
+                len(self.trainset.users), len(self.trainset.items),
+                self.trainset.adj_matrix, **self.config.model
+            )
         elif issubclass(self.config.model_class, BasicGNN) or issubclass(self.config.model_class, HybridBertGNN):
             self.model = self.config.model_class(self.trainset.adj_matrix, **self.config.model)
         else:
@@ -170,12 +173,6 @@ class Experimenter:
             workers=self.config.n_workers,
             callbacks=[LogCallback(self.logger, LOG_FREQUENCY)]
         )
-
-        # creates a HDF5 file 'model.h5'
-        self.logger.info('Saving model...')
-        save_path = path_join(self.config.dest, 'model.h5')
-        self.model.save_weights(save_path)
-        self.logger.info('Succesfully saved in ' + save_path)
 
     def evaluate(self):
         """

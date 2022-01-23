@@ -3,7 +3,32 @@ import tensorflow as tf
 from scipy import sparse
 
 
+def symmetrize_matrix(x):
+    """
+    Symmetrize a matrix (either dense or sparse).
+
+    :param x: The input matrix to symmetrize.
+    :return: The resulting symmetric matrix.
+    """
+    if sparse.issparse(x):
+        coo_data = np.concatenate([x.data, x.data])
+        coo_rows = np.concatenate([x.row, x.col])
+        coo_cols = np.concatenate([x.col, x.row])
+        return sparse.coo_matrix(
+            (coo_data, (coo_rows, coo_cols)),
+            shape=x.shape, dtype=x.dtype
+        )
+    return np.maximum(x, x.T)
+
+
 def convert_to_tensor(x, dtype=tf.float32):
+    """
+    Convert array (either dense or sparse) to a tensor.
+
+    :param x: The (either dense or sparse) array.
+    :param dtype: The output tensor dtype.
+    :return: The resulting tensor.
+    """
     if sparse.issparse(x):
         return sparse_matrix_to_tensor(x, dtype=dtype)
     return tf.convert_to_tensor(x, dtype=dtype)
