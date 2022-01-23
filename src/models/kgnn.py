@@ -1,3 +1,5 @@
+import abc
+
 import tensorflow as tf
 
 from scipy import sparse
@@ -5,6 +7,7 @@ from tensorflow.keras import models, regularizers, layers
 
 from spektral.layers.convolutional import GCNConv
 
+from models.gnn import SequentialGNN, InputSequentialGNN
 from utilities.math import convert_to_tensor
 from layers.kgcn_conv import KGCNConv
 from layers.reduction import ReductionLayer
@@ -100,3 +103,124 @@ class KGCN(models.Model):
 
         # Reduce the outputs of each GCN layer
         return self.reduce(hs)
+
+
+class TwoStepGNN:
+    def __init__(
+        self,
+        adj_matrices,
+        n_hops,
+        embedding_dim=8,
+        final_node="concatenation",
+        dropout=None,
+        l2_regularizer=None,
+        cache_neighbours=False,
+        **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on Graph Neural Networks (GCN).
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_hops: Distance from which every node will be convoluted to.
+        :param embedding_dim: The dimension of latent features representations of user and items.
+        :param final_node: Defines how the final node will be represented from layers. One between the following:
+                           'concatenation', 'sum', 'mean', 'w-sum', 'last'.
+        :param dropout: The dropout to apply after each GCN layer. It can be None.
+        :param l2_regularizer: L2 factor to apply on embeddings and GCN layers' weights. It can be None.
+        :param cache_neighbours: Whether to pre-compute and cache the neighbours of each node. This is useful only
+                                 if the adjacency matrix is very sparse and n_hops is relatively small.
+        :param **kwargs: Additional args not used.
+        """
+        super().__init__()
+
+        # Instantiate the regularizer
+        if l2_regularizer is not None:
+            regularizer = regularizers.l2(l2_regularizer)
+        else:
+            regularizer = None
+
+        if len(adj_matrices) != 2:
+            raise ValueError('Exactly two adjacency matrix are needed!')
+        adj_ui_matrix, adj_kg_matrix = adj_matrices
+
+        # Build the sequential GNN model
+        gnn_kwargs = {'regularizer': regularizer}
+        gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
+        self.step_one_gnn_layers = SequentialGNN(
+            adj_ui_matrix, gnn_layers,
+            embedding_dim=embedding_dim, final_node=final_node,
+            dropout=dropout, regularizer=regularizer, cache_neighbours=cache_neighbours
+        )
+
+        self.step_two_gnn_layers = InputSequentialGNN(
+            adj_kg_matrix, gnn_layers,
+            final_node=final_node, dropout=dropout, cache_neighbours=cache_neighbours
+        )
+
+    @abc.abstractmethod
+    def build_gnn_layer(self, i, **kwargs):
+        """
+        Abstract method that builds the i-th GNN layer.
+
+        :param i: The index.
+        :param kwargs: Additional parameters.
+        """
+        pass
+
+    def call(self, inputs, **kwargs):
+        return self.step_two_gnn_layers(self.step_one_gnn_layers(None))
+
+
+class TwoStepGCN(TwoStepGNN):
+    def __init__(
+            self,
+            adj_matrices,
+            n_hiddens=(8, 8, 8),
+            **kwargs
+    ):
+        """
+        Initialize a Basic recommender system based on Two Step Graph Convolutional Networks (GCN).
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GCN layer.
+        """
+        self.n_hiddens = n_hiddens
+
+        # Note normalizing the adjacency matrix using the GCN filter
+        adj_matrices = [GCNConv.preprocess(matrix) for matrix in adj_matrices]
+        super().__init__(
+            adj_matrices,
+            len(n_hiddens),
+            **kwargs)
+
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
+        return GCNConv(
+            self.n_hiddens[i],
+            activation='relu',
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
+        )
+
+
+class TwoStepGraphSage(TwoStepGNN):
+    def __init__(
+            self,
+            adj_matrices,
+            n_hiddens=(8, 8, 8),
+            aggregate='mean',
+            **kwargs
+    ):
+        """
+        Initialize TwoStepGraphSage.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_hiddens: A sequence of numbers of hidden units for each GraphSage layer.
+        :param aggregate: Which aggregation function to use in update (mean, max, ...)
+        """
+        self.n_hiddens = n_hiddens
+        self.aggregate = aggregate
+
+        super().__init__(
+            adj_matrices,
+            len(n_hiddens),
+            **kwargs)
