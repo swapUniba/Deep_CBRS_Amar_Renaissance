@@ -4,7 +4,6 @@ grid:
       name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
       dense_units:  [[64, 32]]
-      clf_units: [[32, 32]]
       embedding_dim: [8]
       n_hiddens: [[8, 8]]
       n_layers: [2]
@@ -12,3 +11,4 @@ grid:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
       type_adjacency: [unary-kg]
+
