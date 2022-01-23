@@ -3,7 +3,7 @@ import abc
 import tensorflow as tf
 
 from scipy import sparse
-from spektral.layers import GATConv
+from spektral.layers import GATConv, GraphSageConv
 from tensorflow.keras import models, regularizers, layers
 
 from spektral.layers.convolutional import GCNConv
@@ -106,9 +106,11 @@ class KGCN(models.Model):
         return self.reduce(hs)
 
 
-class TwoStepGNN:
+class TwoStepGNN(abc.ABC, models.Model):
     def __init__(
         self,
+        n_users,
+        n_items,
         adj_matrices,
         n_hops,
         embedding_dim=8,
@@ -144,18 +146,30 @@ class TwoStepGNN:
             raise ValueError('Exactly two adjacency matrix are needed!')
         adj_ui_matrix, adj_kg_matrix = adj_matrices
 
-        # Build the sequential GNN model
+        # Build the first sequential GNN model
         gnn_kwargs = {'regularizer': regularizer}
-        gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
+        step_one_gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
         self.step_one_gnn_layers = SequentialGNN(
-            adj_ui_matrix, gnn_layers,
+            adj_kg_matrix, step_one_gnn_layers,
             embedding_dim=embedding_dim, final_node=final_node,
             dropout=dropout, regularizer=regularizer, cache_neighbours=cache_neighbours
         )
 
+        # Get the slice of item embeddings
+        self.n_embeddings = n_items
+
+        # Build the second sequential model
+        # Get the number of hiddens for the second GNN
+        if hasattr(self, 'n_hiddens'):
+            if n_hops == len(self.n_hiddens):
+                if final_node == 'concatenation':
+                    self.n_hiddens.extend([embedding_dim * (n_hops + 1) for _ in range(n_hops)])
+                else:
+                    self.n_hiddens.extend([embedding_dim for _ in range(n_hops)])
+        step_two_gnn_layers = [self.build_gnn_layer(i + n_hops, **gnn_kwargs) for i in range(n_hops)]
         self.step_two_gnn_layers = InputSequentialGNN(
-            adj_kg_matrix, gnn_layers,
-            final_node=final_node, dropout=dropout, cache_neighbours=cache_neighbours
+            adj_ui_matrix, step_two_gnn_layers, n_users,
+            embedding_dim=self.n_hiddens[n_hops], final_node=final_node, dropout=dropout, cache_neighbours=cache_neighbours
         )
 
     @abc.abstractmethod
@@ -169,12 +183,15 @@ class TwoStepGNN:
         pass
 
     def call(self, inputs, **kwargs):
-        return self.step_two_gnn_layers(self.step_one_gnn_layers(None))
+        x = self.step_one_gnn_layers(None)
+        return self.step_two_gnn_layers(x[:self.n_embeddings])
 
 
 class TwoStepGCN(TwoStepGNN):
     def __init__(
             self,
+            n_users,
+            n_items,
             adj_matrices,
             n_hiddens=(8, 8, 8),
             **kwargs
@@ -190,6 +207,8 @@ class TwoStepGCN(TwoStepGNN):
         # Note normalizing the adjacency matrix using the GCN filter
         adj_matrices = [GCNConv.preprocess(matrix) for matrix in adj_matrices]
         super().__init__(
+            n_users,
+            n_items,
             adj_matrices,
             len(n_hiddens),
             **kwargs)
@@ -206,6 +225,8 @@ class TwoStepGCN(TwoStepGNN):
 class TwoStepGraphSage(TwoStepGNN):
     def __init__(
             self,
+            n_users,
+            n_items,
             adj_matrices,
             n_hiddens=(8, 8, 8),
             aggregate='mean',
@@ -222,14 +243,27 @@ class TwoStepGraphSage(TwoStepGNN):
         self.aggregate = aggregate
 
         super().__init__(
+            n_users,
+            n_items,
             adj_matrices,
             len(n_hiddens),
             **kwargs)
+
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
+        return GraphSageConv(
+            self.n_hiddens[i],
+            activation='relu',
+            aggregate=self.aggregate,
+            kernel_regularizer=regularizer,
+            bias_regularizer=regularizer
+        )
 
 
 class TwoStepGAT(TwoStepGNN):
     def __init__(
             self,
+            n_users,
+            n_items,
             adj_matrix,
             n_hiddens=(8, 8, 8),
             dropout_rate=0.0,
@@ -246,6 +280,8 @@ class TwoStepGAT(TwoStepGNN):
         self.dropout_rate = dropout_rate
 
         super().__init__(
+            n_users,
+            n_items,
             adj_matrix,
             len(n_hiddens),
             **kwargs)

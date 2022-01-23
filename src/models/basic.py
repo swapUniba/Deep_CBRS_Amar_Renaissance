@@ -127,7 +127,11 @@ class BasicDGCF(BasicGNN):
         self.gnn = DGCF(*args, **kwargs)
 
 
-class BasicTSGCN(BasicGNN):
+class BasicTSGNN(BasicGNN):
+    pass
+
+
+class BasicTSGCN(BasicTSGNN):
     def __init__(self, *args, **kwargs):
         """
         Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
@@ -136,7 +140,7 @@ class BasicTSGCN(BasicGNN):
         self.gnn = TwoStepGCN(*args, **kwargs)
 
 
-class BasicTSGAT(BasicGNN):
+class BasicTSGAT(BasicTSGNN):
     def __init__(self, *args, **kwargs):
         """
         Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
@@ -145,7 +149,7 @@ class BasicTSGAT(BasicGNN):
         self.gnn = TwoStepGAT(*args, **kwargs)
 
 
-class BasicTSGraphSage(BasicGNN):
+class BasicTSGraphSage(BasicTSGNN):
     def __init__(self, *args, **kwargs):
         """
         Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
