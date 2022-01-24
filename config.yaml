@@ -12,6 +12,8 @@ model:
   final_node: 'concatenation'
   # For TwoStep
   item_node: 'mean'
+  # For TwoWay
+  user_item_node: 'mean'
   # GraphSage
   aggregate: mean
   # GAT
