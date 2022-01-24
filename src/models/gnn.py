@@ -84,7 +84,7 @@ class SequentialGNN(models.Model):
         return self.reduce(hs)
 
 
-class InputSequentialGNN(models.Model):
+class HalfInputSequentialGNN(models.Model):
     def __init__(self, adj_matrix, seq_layers, n_random_embeddings, final_node='concatenation', dropout=None,
                  embedding_dim=8,
                  regularizer=None,
@@ -140,6 +140,62 @@ class InputSequentialGNN(models.Model):
 
     def call(self, inputs, **kwargs):
         x = tf.concat([self.embeddings, inputs], axis=0)
+        hs = [x]
+        for gnn in self.seq_layers:
+            x = gnn([x, self.adj_matrix])
+            if self.dropout is not None:
+                x = self.dropout(x)
+            hs.append(x)
+
+        # Reduce the outputs of each GCN layer
+        return self.reduce(hs)
+
+
+class FullInputSequentialGNN(models.Model):
+    def __init__(self, adj_matrix, seq_layers, final_node='concatenation', dropout=None,
+                 cache_neighbours=False, *args, **kwargs):
+        """
+       Initialize a sequence of Graph Neural Networks (GNNs) layers which embeddings are given in input.
+
+       :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+       :param seq_layers: A list of GNN layers.
+       :param final_node: Defines how the final node will be represented from layers. One between the following:
+                          'concatenation', 'sum', 'mean', 'w-sum', 'last'.
+       :param dropout: The dropout to apply after each GCN layer. It can be None.
+       :param regularizer: The regularizer object to use for the embeddings. It can be None.
+       :param cache_neighbours: Whether to pre-compute and cache the neighbours of each node. This is useful only
+                                if the adjacency matrix is very sparse and n_hops is relatively small.
+       """
+        super().__init__(*args, **kwargs)
+        self.cache_neighbours = cache_neighbours
+
+        # Initialize the adjacency matrix constant parameter
+        self.adj_matrix = convert_to_tensor(adj_matrix, dtype=tf.float32)
+
+        # Compute the n-grade adjacency matrix, if needed
+        if self.cache_neighbours:
+            raise NotImplementedError("Multi-hops neighbours caching is not yet completely supported!")
+            if sparse.issparse(adj_matrix):
+                adj_matrix = adj_matrix.todense()
+            self.n_grade_adjacency = get_ngrade_neighbors(adj_matrix, self.n_hops)
+
+        # Build the dropout layer
+        self.dropout = layers.Dropout(dropout) if dropout else None
+
+        # Build the reduction layer
+        self.reduce = ReductionLayer(final_node)
+
+        # Build GNN layers
+        self.seq_layers = seq_layers
+
+    @property
+    def n_hops(self):
+        return len(self.seq_layers)
+
+    def __len__(self):
+        return self.n_hops
+
+    def call(self, x, **kwargs):
         hs = [x]
         for gnn in self.seq_layers:
             x = gnn([x, self.adj_matrix])

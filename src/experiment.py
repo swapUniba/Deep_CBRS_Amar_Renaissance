@@ -6,7 +6,7 @@ from time import strftime
 from utilities.utils import \
     get_experiment_logger, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from utilities.keras import get_total_parameters, LogCallback
-from models.basic import BasicRS, BasicGNN, BasicKGCN, BasicTSGNN
+from models.basic import BasicRS, BasicGNN, BasicKGCN, BasicTSGNN, BasicTWGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
 from utilities import losses
@@ -27,7 +27,7 @@ import mlflow
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
-MLFLOW_EXP_NAME = 'SIS - Movielens-1M - BasicRS with Knowledge GNNs'
+MLFLOW_EXP_NAME = 'SIS - Movielens-1M - BasicRS with Knowledge GNNs prova'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
@@ -129,7 +129,9 @@ class Experimenter:
         self.logger.info('Building model...')
 
         # Additional parameter for GNNs
-        if issubclass(self.config.model_class, BasicKGCN) or issubclass(self.config.model_class, BasicTSGNN):
+        if issubclass(self.config.model_class, BasicKGCN) or \
+                issubclass(self.config.model_class, BasicTSGNN) or \
+                issubclass(self.config.model_class, BasicTWGNN):
             self.model = self.config.model_class(
                 len(self.trainset.users), len(self.trainset.items),
                 self.trainset.adj_matrix, **self.config.model

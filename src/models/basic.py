@@ -4,16 +4,18 @@ from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
-from models.kgnn import KGCN, TwoStepGCN, TwoStepGAT, TwoStepGraphSage, TwoStepLightGCN, TwoStepDGCF
+from models.kgnn import KGCN
+from models.tsgnn import TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF
+from models.twgnn import TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF
 
 
 class BasicRS(models.Model):
     def __init__(
-        self,
-        dense_units=(512, 256, 128),
-        clf_units=(64, 64),
-        activation='relu',
-        **kwargs
+            self,
+            dense_units=(512, 256, 128),
+            clf_units=(64, 64),
+            activation='relu',
+            **kwargs
     ):
         """
         :param dense_units: Dense networks units for the Basic recommender system.
@@ -37,11 +39,11 @@ class BasicRS(models.Model):
 
 class BasicGNN(abc.ABC, models.Model):
     def __init__(
-        self,
-        dense_units=(32, 16),
-        clf_units=(16, 16),
-        activation='relu',
-        **kwargs
+            self,
+            dense_units=(32, 16),
+            clf_units=(16, 16),
+            activation='relu',
+            **kwargs
     ):
         """
         Initialize a Basic recommender system based on Graph Neural Networks (GCN).
@@ -131,6 +133,9 @@ class BasicTSGNN(BasicGNN):
     pass
 
 
+class BasicTWGNN(BasicGNN):
+    pass
+
 class BasicTSGCN(BasicTSGNN):
     def __init__(self, *args, **kwargs):
         """
@@ -174,3 +179,35 @@ class BasicTSDGCF(BasicTSGNN):
         """
         super().__init__(**kwargs)
         self.gnn = TwoStepDGCF(*args, **kwargs)
+
+
+def BasicGNNFactory(name, Parent, GNN):
+    def __init__(self, *args, **kwargs):
+        Parent.__init__(self, **kwargs)
+        self.gnn = self.gnn_class(*args, **kwargs)
+
+    basic_gnn = type(name, (Parent,), {"gnn_class": GNN, "__init__": __init__})
+    return basic_gnn
+
+
+BASIC_GNNS = [
+    # (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF]),
+    # (BasicGNN, [KGCN]),
+    # (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF]),
+    (BasicTWGNN, [TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF],
+     lambda name: 'BasicTW' + name[6:]),
+]
+
+
+def generate_basics():
+    for parent, gnns, name_getter in BASIC_GNNS:
+        for gnn in gnns:
+            if name_getter is not None:
+                name = name_getter(gnn.__name__)
+            else:
+                name = 'Basic' + gnn.__name__
+            globals()[name] = BasicGNNFactory(name, parent, gnn)
+
+
+# Generate gnns when module is loaded
+generate_basics()

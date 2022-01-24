@@ -8,6 +8,7 @@ from scipy import sparse
 from utilities.math import symmetrize_matrix
 from data.datasets import UserItemEmbeddings, HybridUserItemEmbeddings
 from data.datasets import UserItemGraph, UserItemGraphEmbeddings, UserItemGraphPosNegSample
+from utilities.preprocess import get_user_properties
 
 
 def build_adjacency_matrix(
@@ -355,6 +356,7 @@ def load_user_item_graph(
         type_adjacency='unary',
         sparse_adjacency=True,
         symmetric_adjacency=True,
+        user_properties=False,
         shuffle=True,
         train_batch_size=1024,
         test_batch_size=2048
@@ -373,6 +375,7 @@ def load_user_item_graph(
                            unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
+    :param user_properties: Whether to calculate the user-properties matrix.
     :param shuffle: Tells if shuffle the training dataset.
     :param train_batch_size: batch_size used in training phase.
     :param test_batch_size: batch_size used in test phase.
@@ -387,6 +390,10 @@ def load_user_item_graph(
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
                                 symmetric_adjacency=symmetric_adjacency)
+    if user_properties:
+        ui_adj, ip_adj = adj_matrix
+        user_properties_adj = get_user_properties(ui_adj, ip_adj, len(users), len(items))
+        adj_matrix = (ui_adj, ip_adj, user_properties_adj)
     data_train = UserItemGraph(
         train_ratings, users, items, adj_matrix,
         batch_size=train_batch_size, shuffle=shuffle

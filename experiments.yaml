@@ -1,7 +1,7 @@
 grid:
   grid1:
     model:
-      name: [basic.BasicTSGCN]
+      name: [basic.BasicTWGCN]
       l2_regularizer: [1e-4, 1e-3]
       dense_units:  [[24, 24]]
       embedding_dim: [8]
@@ -11,64 +11,4 @@ grid:
       load_function_name: [load_user_item_graph]
       props_triples_filepath: [datasets/movielens/props2id.tsv]
       type_adjacency: [unary-kg]
-  grid2:
-    model:
-      name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN, basic.BasicTSLightGCN, basic.BasicTSDGCF]
-      l2_regularizer: [1e-4, 1e-3]
-      dense_units:  [[48, 48]]
-      embedding_dim: [16]
-      n_hiddens: [[16, 16]]
-      n_layers: [2]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid3:
-    model:
-      name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN, basic.BasicTSLightGCN, basic.BasicTSDGCF]
-      l2_regularizer: [1e-4, 1e-3]
-      dense_units:  [[96, 48]]
-      embedding_dim: [32]
-      n_hiddens: [[32, 32]]
-      n_layers: [2]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-
-  grid4:
-    model:
-      name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN, basic.BasicTSLightGCN, basic.BasicTSDGCF]
-      l2_regularizer: [1e-4, 1e-3]
-      dense_units:  [[32, 32]]
-      embedding_dim: [8]
-      n_hiddens: [[8, 8, 8]]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid5:
-    model:
-      name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN, basic.BasicTSLightGCN, basic.BasicTSDGCF]
-      l2_regularizer: [1e-4, 1e-3]
-      dense_units:  [[64, 64]]
-      embedding_dim: [16]
-      n_hiddens: [[16, 16]]
-      n_layers: [2]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid6:
-    model:
-      name: [basic.BasicTSGAT, basic.BasicTSGraphSage, basic.BasicTSGCN, basic.BasicTSLightGCN, basic.BasicTSDGCF]
-      l2_regularizer: [1e-4, 1e-3]
-      dense_units:  [[128, 64]]
-      embedding_dim: [32]
-      n_hiddens: [[32, 32]]
-      n_layers: [2]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
+      user_properties: [True]
