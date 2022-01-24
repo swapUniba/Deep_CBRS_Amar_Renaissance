@@ -41,8 +41,10 @@ def linearize(dictionary):
     for key, value in dictionary.items():
         if isinstance(value, collections.abc.Mapping):
             exps.extend(((key, lin_key), lin_value) for lin_key, lin_value in linearize(value))
-        if isinstance(value, list):
+        elif isinstance(value, list):
             exps.append((key, value))
+        else:
+          raise ValueError("Only dict or lists!!!")
     return exps
 
 
