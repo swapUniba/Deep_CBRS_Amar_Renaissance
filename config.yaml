@@ -19,8 +19,10 @@ model:
   # BasicRS and HybridCBRS
   dense_units: [512, 256, 128]
   clf_units: [64, 64]
+  activation: 'relu'
   # HybridCBRS
   feature_based: True
+  batch_norm: False
 
 dataset:
   load_function_name: load_graph_embeddings

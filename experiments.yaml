@@ -1,49 +1,13 @@
 grid:
   grid1:
     model:
-      name: [basic.BasicKGCN]
+      name: [hybrid.HybridBertGCN]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[24, 24]]
-      clf_units: [[32, 32]]
-      embedding_dim: [8]
-      n_layers: [2]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid2:
-    model:
-      name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[32, 32]]
-      clf_units: [[64, 64]]
-      embedding_dim: [8]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid3:
-    model:
-      name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[48, 48]]
+      dense_units:  [[[48, 48], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
       embedding_dim: [16]
       n_layers: [2]
+      activation: ['leaky_relu']
+      batch_norm: [True]
     dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
-  grid4:
-    model:
-      name: [basic.BasicKGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[64, 64]]
-      clf_units: [[64, 64]]
-      embedding_dim: [16]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
-      type_adjacency: [unary-kg]
+      load_function_name: [load_user_item_graph_bert_embeddings]
