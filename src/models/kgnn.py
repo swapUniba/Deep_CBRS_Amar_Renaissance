@@ -8,6 +8,8 @@ from tensorflow.keras import models, regularizers, layers
 
 from spektral.layers.convolutional import GCNConv
 
+from layers.dgcf_conv import DGCFConv
+from layers.lightgcn_conv import LightGCNConv
 from models.gnn import SequentialGNN, InputSequentialGNN
 from utilities.math import convert_to_tensor
 from layers.kgcn_conv import KGCNConv
@@ -114,6 +116,7 @@ class TwoStepGNN(abc.ABC, models.Model):
         adj_matrices,
         n_hops,
         embedding_dim=8,
+        item_node="mean",
         final_node="concatenation",
         dropout=None,
         l2_regularizer=None,
@@ -151,7 +154,7 @@ class TwoStepGNN(abc.ABC, models.Model):
         step_one_gnn_layers = [self.build_gnn_layer(i, **gnn_kwargs) for i in range(n_hops)]
         self.step_one_gnn_layers = SequentialGNN(
             adj_kg_matrix, step_one_gnn_layers,
-            embedding_dim=embedding_dim, final_node=final_node,
+            embedding_dim=embedding_dim, final_node=item_node,
             dropout=dropout, regularizer=regularizer, cache_neighbours=cache_neighbours
         )
 
@@ -162,14 +165,19 @@ class TwoStepGNN(abc.ABC, models.Model):
         # Get the number of hiddens for the second GNN
         if hasattr(self, 'n_hiddens'):
             if n_hops == len(self.n_hiddens):
-                if final_node == 'concatenation':
-                    self.n_hiddens.extend([embedding_dim * (n_hops + 1) for _ in range(n_hops)])
+                if item_node == 'concatenation':
+                    second_embedding_dim = embedding_dim * (n_hops + 1)
+                    self.n_hiddens.extend([second_embedding_dim for _ in range(n_hops)])
                 else:
                     self.n_hiddens.extend([embedding_dim for _ in range(n_hops)])
+                    second_embedding_dim = embedding_dim
+        else:
+            second_embedding_dim = embedding_dim
         step_two_gnn_layers = [self.build_gnn_layer(i + n_hops, **gnn_kwargs) for i in range(n_hops)]
         self.step_two_gnn_layers = InputSequentialGNN(
             adj_ui_matrix, step_two_gnn_layers, n_users,
-            embedding_dim=self.n_hiddens[n_hops], final_node=final_node, dropout=dropout, cache_neighbours=cache_neighbours
+            embedding_dim=second_embedding_dim, final_node=final_node,
+            dropout=dropout, cache_neighbours=cache_neighbours
         )
 
     @abc.abstractmethod
@@ -294,3 +302,65 @@ class TwoStepGAT(TwoStepGNN):
             kernel_regularizer=regularizer,
             bias_regularizer=regularizer
         )
+
+
+class TwoStepLightGCN(TwoStepGNN):
+    def __init__(
+            self,
+            n_users,
+            n_items,
+            adj_matrix,
+            n_layers=3,
+            **kwargs
+    ):
+        """
+        Initialize a TwoStep LigthGCN.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_layers: The number of sequential LightGCN layers.
+        """
+        # Override final_node parameter to 'mean'
+        kwargs['final_node'] = 'mean'
+
+        # Note normalizing the adjacency matrix using the GCN filter
+        adj_matrix = [LightGCNConv.preprocess(matrix ) for matrix in adj_matrix]
+        super().__init__(
+            n_users,
+            n_items,
+            adj_matrix,
+            n_layers,
+            **kwargs)
+
+    def build_gnn_layer(self, i, **kwargs):
+        return LightGCNConv()
+
+
+class TwoStepDGCF(TwoStepGNN):
+    def __init__(
+            self,
+            n_users,
+            n_items,
+            adj_matrix,
+            n_layers=3,
+            **kwargs
+    ):
+        """
+        Initialize DGCF.
+
+        :param adj_matrix: The graph adjacency matrix. It can be either sparse or dense.
+        :param n_layers: The number of sequential DGCF layers.
+        """
+        # Override final_node parameter to 'mean'
+        kwargs['final_node'] = 'mean'
+
+        # Note normalizing the adjacency matrix using the GCN filter and getting the crosshop matrix
+        crosshop_matrix = [DGCFConv.preprocess(matrix) for matrix in adj_matrix]
+        super().__init__(
+            n_users,
+            n_items,
+            crosshop_matrix,
+            n_layers,
+            **kwargs)
+
+    def build_gnn_layer(self, i, regularizer=None, **kwargs):
+        return DGCFConv(regularizer)

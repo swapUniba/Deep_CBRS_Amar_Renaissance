@@ -10,6 +10,8 @@ model:
   # Defines how the final node will be represented from layers (concatenation, sum, mean, last, w-mean)
   # It is overwritten to 'mean' in case of LightGCN
   final_node: 'concatenation'
+  # For TwoStep
+  item_node: 'mean'
   # GraphSage
   aggregate: mean
   # GAT

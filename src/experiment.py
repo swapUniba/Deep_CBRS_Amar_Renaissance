@@ -253,7 +253,7 @@ class MultiExperimenter:
             for grid in dict_lists.values():
                 dicts = make_grid(grid)
                 self.experiments = {**self.experiments, **{str(elem): elem for elem in dicts}}
-        print("Retrieved experiments:")
+        print("Retrieved experiments: {}".format(len(self.experiments.keys())))
         for exp in self.experiments.keys():
             print(exp)
 
