@@ -274,8 +274,12 @@ class MultiExperimenter:
               '{}\n'.format(exp_name),
               '-----------------------------------------------\n'
               )
-        exp = Experimenter(config)
-        exp.run()
+        try:
+            exp = Experimenter(config)
+            exp.run()
+        except Exception as e:
+            print(e)
+            mlflow.end_run()
 
     def run(self):
         """
