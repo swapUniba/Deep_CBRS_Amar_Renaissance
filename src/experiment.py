@@ -22,6 +22,7 @@ import inspect
 import os
 import io
 import mlflow
+import traceback
 
 
 PARAMS_PATH = 'config.yaml'
@@ -279,6 +280,7 @@ class MultiExperimenter:
             exp.run()
         except Exception as e:
             print(e)
+            traceback.print_exc()
             mlflow.end_run()
 
     def run(self):
