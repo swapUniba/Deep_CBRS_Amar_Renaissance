@@ -5,6 +5,9 @@ from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
+from models.kgnn import KGCN
+from models.tsgnn import TwoStepGraphSage, TwoStepGAT, TwoStepDGCF, TwoStepGCN, TwoStepLightGCN
+from models.twgnn import TwoWayDGCF, TwoWayGAT, TwoWayLightGCN, TwoWayGraphSage, TwoWayGCN
 
 
 class HybridCBRS(models.Model):
@@ -101,46 +104,42 @@ class HybridBertGNN(abc.ABC, models.Model):
         return self.rs([ug, ig, ub, ib])
 
 
-class HybridBertGCN(HybridBertGNN):
+def BasicGNNFactory(name, Parent, GNN):
     def __init__(self, *args, **kwargs):
-        """
-        Initialize an hybrid recommender system based on Graph Convolutional Networks (GCN) and BERT embeddings.
-        """
-        super().__init__(**kwargs)
-        self.gnn = GCN(*args, **kwargs)
+        Parent.__init__(self, **kwargs)
+        self.gnn = self.gnn_class(*args, **kwargs)
+
+    basic_gnn = type(name, (Parent,), {"gnn_class": GNN, "__init__": __init__})
+    return basic_gnn
 
 
-class HybridBertGAT(HybridBertGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize an hybrid recommender system based on Graph Attention Networks (GAT) and BERT embeddings.
-        """
-        super().__init__(**kwargs)
-        self.gnn = GAT(*args, **kwargs)
+class HybridBertTSGNN(HybridBertGNN):
+    pass
 
 
-class HybridBertGraphSage(HybridBertGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize an hybrid recommender system based on GraphSage and BERT embeddings.
-        """
-        super().__init__(**kwargs)
-        self.gnn = GraphSage(*args, **kwargs)
+class HybridBertTWGNN(HybridBertGNN):
+    pass
 
 
-class HybridBertLightGCN(HybridBertGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize an hybrid recommender system based on GraphSage and BERT embeddings.
-        """
-        super().__init__(**kwargs)
-        self.gnn = LightGCN(*args, **kwargs)
+HYBRID_GNNS = [
+    (HybridBertGNN, [GCN, GAT, GraphSage, LightGCN, DGCF]),
+    (HybridBertGNN, [KGCN]),
+    (HybridBertTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
+     lambda name: 'HybridBertTS' + name[7:]),
+    (HybridBertTWGNN, [TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF],
+     lambda name: 'HybridBertTW' + name[6:]),
+]
 
 
-class HybridBertDGCF(HybridBertGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize an hybrid recommender system based on GraphSage and BERT embeddings.
-        """
-        super().__init__(**kwargs)
-        self.gnn = DGCF(*args, **kwargs)
+def generate_basics():
+    for parent, gnns, name_getter in HYBRID_GNNS:
+        for gnn in gnns:
+            if name_getter is not None:
+                name = name_getter(gnn.__name__)
+            else:
+                name = 'HybridBert' + gnn.__name__
+            globals()[name] = BasicGNNFactory(name, parent, gnn)
+
+
+# Generate gnns when module is loaded
+generate_basics()
