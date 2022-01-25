@@ -287,7 +287,9 @@ class MultiExperimenter:
         """
         Runs all the experiments
         """
-        for exp_name in self.experiments:
+        n_exp = len(self.experiments)
+        for i, exp_name in enumerate(self.experiments):
+            print("Experiment {}/{}".format(i+1, n_exp))
             self.run_experiment(exp_name)
 
 
