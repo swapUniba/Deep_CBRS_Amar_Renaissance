@@ -93,8 +93,10 @@ def BasicGNNFactory(name, Parent, GNN):
 
 
 BASIC_GNNS = [
-    (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF]),
-    (BasicGNN, [KGCN]),
+    (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF],
+     None),
+    (BasicGNN, [KGCN],
+     None),
     (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
      lambda name: 'BasicTS' + name[7:]),
     (BasicTWGNN, [TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF],
