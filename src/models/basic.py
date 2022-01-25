@@ -34,7 +34,8 @@ class BasicRS(models.Model):
         u = self.unet(u)
         i = self.inet(i)
         x = self.concat([u, i])
-        return self.clf(x)
+        out = self.clf(x)
+        return out
 
 
 class BasicGNN(abc.ABC, models.Model):
@@ -83,6 +84,10 @@ class BasicTWGNN(BasicGNN):
     pass
 
 
+class BasicKnowledgeGCN(BasicGNN):
+    pass
+
+
 def BasicGNNFactory(name, Parent, GNN):
     def __init__(self, *args, **kwargs):
         Parent.__init__(self, **kwargs)
@@ -95,7 +100,7 @@ def BasicGNNFactory(name, Parent, GNN):
 BASIC_GNNS = [
     (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF],
      None),
-    (BasicGNN, [KGCN],
+    (BasicKnowledgeGCN, [KGCN],
      None),
     (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
      lambda name: 'BasicTS' + name[7:]),
