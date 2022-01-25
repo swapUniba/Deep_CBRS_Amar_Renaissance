@@ -8,8 +8,8 @@ def get_user_properties(ui_adj, ip_adj, n_users, n_items):
 
     ui_rows, ui_cols = ui_adj.row, ui_adj.col
     ip_rows, ip_cols = ip_adj.row, ip_adj.col
-    ip_rows += n_users
-    ip_cols += n_users
+    ip_rows = ip_rows + n_users
+    ip_cols = ip_cols + n_users
     uip_rows = np.concatenate([ui_rows, ip_rows])
     uip_cols = np.concatenate([ui_cols, ip_cols])
     uip_data = np.concatenate([ui_adj.data, ip_adj.data])
