@@ -75,110 +75,12 @@ class BasicGNN(abc.ABC, models.Model):
         return self.rs([u, i])
 
 
-class BasicGCN(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on Graph Convolutional Networks (GCN).
-        """
-        super().__init__(**kwargs)
-        self.gnn = GCN(*args, **kwargs)
-
-
-class BasicGAT(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on Graph Attention Networks (GAT).
-        """
-        super().__init__(**kwargs)
-        self.gnn = GAT(*args, **kwargs)
-
-
-class BasicGraphSage(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on GraphSage.
-        """
-        super().__init__(**kwargs)
-        self.gnn = GraphSage(*args, **kwargs)
-
-
-class BasicLightGCN(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on LightGCN.
-        """
-        super().__init__(**kwargs)
-        self.gnn = LightGCN(*args, **kwargs)
-
-
-class BasicKGCN(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on Knowledge Graph Convolutional Networks (KGCNs).
-        """
-        super().__init__(**kwargs)
-        self.gnn = KGCN(*args, **kwargs)
-
-
-class BasicDGCF(BasicGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on DGCF.
-        """
-        super().__init__(**kwargs)
-        self.gnn = DGCF(*args, **kwargs)
-
-
 class BasicTSGNN(BasicGNN):
     pass
 
 
 class BasicTWGNN(BasicGNN):
     pass
-
-class BasicTSGCN(BasicTSGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
-        """
-        super().__init__(**kwargs)
-        self.gnn = TwoStepGCN(*args, **kwargs)
-
-
-class BasicTSGAT(BasicTSGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
-        """
-        super().__init__(**kwargs)
-        self.gnn = TwoStepGAT(*args, **kwargs)
-
-
-class BasicTSGraphSage(BasicTSGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
-        """
-        super().__init__(**kwargs)
-        self.gnn = TwoStepGraphSage(*args, **kwargs)
-
-
-class BasicTSLightGCN(BasicTSGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on TwoStep LightGCN.
-        """
-        super().__init__(**kwargs)
-        self.gnn = TwoStepLightGCN(*args, **kwargs)
-
-
-class BasicTSDGCF(BasicTSGNN):
-    def __init__(self, *args, **kwargs):
-        """
-        Initialize a Basic recommender system based on TwoStep DGCF.
-        """
-        super().__init__(**kwargs)
-        self.gnn = TwoStepDGCF(*args, **kwargs)
 
 
 def BasicGNNFactory(name, Parent, GNN):
@@ -191,9 +93,12 @@ def BasicGNNFactory(name, Parent, GNN):
 
 
 BASIC_GNNS = [
-    # (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF]),
-    # (BasicGNN, [KGCN]),
-    # (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF]),
+    (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF],
+     None),
+    (BasicGNN, [KGCN],
+     None),
+    (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
+     lambda name: 'BasicTS' + name[7:]),
     (BasicTWGNN, [TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF],
      lambda name: 'BasicTW' + name[6:]),
 ]
