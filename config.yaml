@@ -27,6 +27,7 @@ model:
   # HybridCBRS
   feature_based: True
   fusion_method: 'concatenate'
+  residual: False
 
 dataset:
   load_function_name: load_graph_embeddings

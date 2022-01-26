@@ -8,8 +8,9 @@ grid:
       embedding_dim: [8]
       n_hiddens: [[8, 8]]
       n_layers: [2]
-      fusion_method: ['attention']
       feature_based: [True]
+      fusion_method: ['concatenate']
+      residual: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
   grid2:
@@ -21,8 +22,9 @@ grid:
       embedding_dim: [16]
       n_hiddens: [[16, 16]]
       n_layers: [2]
-      fusion_method: ['attention']
       feature_based: [True]
+      fusion_method: ['concatenate']
+      residual: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
   grid3:
@@ -34,7 +36,50 @@ grid:
       embedding_dim: [32]
       n_hiddens: [[32, 32]]
       n_layers: [2]
-      fusion_method: ['attention']
       feature_based: [True]
+      fusion_method: ['concatenate']
+      residual: [True]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid4:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[24, 24], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8]]
+      n_layers: [2]
+      feature_based: [True]
+      fusion_method: ['attention']
+      residual: [False]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid5:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[48, 48], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16]]
+      n_layers: [2]
+      feature_based: [True]
+      fusion_method: ['attention']
+      residual: [False]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid6:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[96, 96], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32]]
+      n_layers: [2]
+      feature_based: [True]
+      fusion_method: ['attention']
+      residual: [False]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
