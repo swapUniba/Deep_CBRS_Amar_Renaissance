@@ -15,3 +15,13 @@ def build_dense_classifier(units, n_classes, **kwargs):
     ] + [
         layers.Dense(n_classes, **clf_kwargs)
     ])
+
+
+def build_residual_dense_network(units, **kwargs):
+    last_kwargs = kwargs.copy()
+    last_kwargs['activation'] = None
+    return models.Sequential([
+        layers.Dense(u, **kwargs) for u in units[:-1]
+    ] + [
+        layers.Dense(units[-1], **last_kwargs)
+    ])

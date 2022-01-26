@@ -1,10 +1,10 @@
 import abc
 import tensorflow as tf
 
-from tensorflow.keras import models
+from tensorflow.keras import models, layers
 
 from layers.fusion import FusionLayer
-from models.dense import build_dense_network, build_dense_classifier
+from models.dense import build_dense_network, build_dense_classifier, build_residual_dense_network
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
 from models.kgnn import KGCN
 from models.tsgnn import TwoStepGraphSage, TwoStepGAT, TwoStepDGCF, TwoStepGCN, TwoStepLightGCN
@@ -60,14 +60,14 @@ class HybridCBRS(models.Model):
 
         # Instantiate the classifier network
         if residual:
-            print(residual)
             if dense_units[2][-1] != clf_units[-1]:
                 raise ValueError("The last dense units before the last fusion layer "
                                  "must be equal to the last classifier units for residual connections")
-            self.dense4 = build_dense_network(clf_units, activation=activation)
+            self.residual = build_residual_dense_network(clf_units, activation=activation)
+            self.activation = layers.Activation(activation)
             self.clf = build_dense_classifier([], n_classes=1)
         else:
-            self.dense4 = None
+            self.residual = self.activation = None
             self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
     def call(self, inputs, **kwargs):
@@ -85,9 +85,9 @@ class HybridCBRS(models.Model):
             x2 = self.dense3b(self.fuse1b([ig, ib]))
         x = self.fuse2([x1, x2])
 
-        if self.dense4 is None:
+        if self.residual is None:
             return self.clf(x)
-        return self.clf(self.dense4(x) + x1 + x2)
+        return self.clf(self.activation(self.residual(x) + x1 + x2))
 
 
 class HybridBertGNN(abc.ABC, models.Model):
