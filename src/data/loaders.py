@@ -80,7 +80,7 @@ def build_adjacency_matrix(
         return adj_matrix
 
     # Unary KG adjacency matrices (return both unary adjacency matrix and KG adjacency matrix)
-    if type_adjacency == 'unary-kg':
+    if type_adjacency in ['unary-kg', 'unary-uip']:
         if props is None or props_triples is None:
             raise ValueError("KG adjacency matrix requires properties info")
 
@@ -90,29 +90,52 @@ def build_adjacency_matrix(
 
         # Instantiate the sparse adjacency matrices
         pos_idx = bi_ratings[:, 2] == 1
-        coo_data = bi_ratings[pos_idx, 2]
-        coo_rows, coo_cols = bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1]
-        adj_bi_matrix = sparse.coo_matrix(
-            (coo_data, (coo_rows, coo_cols)),
-            shape=[adj_bi_size, adj_bi_size], dtype=np.float32
-        )
-        coo_data = props_triples[:, 2]
-        coo_rows, coo_cols = props_triples[:, 0], props_triples[:, 1]
-        adj_kg_matrix = sparse.coo_matrix(
-            (coo_data, (coo_rows, coo_cols)),
-            shape=[adj_kg_size, adj_kg_size], dtype=np.float32
-        )
+        bi_coo_data = bi_ratings[pos_idx, 2]
+        bi_coo_rows, bi_coo_cols = bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1]
 
-        # Make the matrices symmetric
-        if symmetric_adjacency:
-            adj_bi_matrix = symmetrize_matrix(adj_bi_matrix)
-            adj_kg_matrix = symmetrize_matrix(adj_kg_matrix)
+        ip_coo_data = props_triples[:, 2]
+        ip_coo_rows, ip_coo_cols = props_triples[:, 0], props_triples[:, 1]
 
-        # Convert to dense matrices, if specified
-        if not sparse_adjacency:
-            adj_bi_matrix = adj_bi_matrix.todense()
-            adj_kg_matrix = adj_kg_matrix.todense()
-        return adj_bi_matrix, adj_kg_matrix
+        if type_adjacency == 'unary-kg':
+            adj_bi_matrix = sparse.coo_matrix(
+                (bi_coo_data, (bi_coo_rows, bi_coo_cols)),
+                shape=[adj_bi_size, adj_bi_size], dtype=np.float32
+            )
+
+            adj_kg_matrix = sparse.coo_matrix(
+                (ip_coo_data, (ip_coo_rows, ip_coo_cols)),
+                shape=[adj_kg_size, adj_kg_size], dtype=np.float32
+            )
+            # Make the matrices symmetric
+            if symmetric_adjacency:
+                adj_bi_matrix = symmetrize_matrix(adj_bi_matrix)
+                adj_kg_matrix = symmetrize_matrix(adj_kg_matrix)
+
+            # Convert to dense matrices, if specified
+            if not sparse_adjacency:
+                adj_bi_matrix = adj_bi_matrix.todense()
+                adj_kg_matrix = adj_kg_matrix.todense()
+            return adj_bi_matrix, adj_kg_matrix
+        else:  # is unary-uip
+            ip_coo_rows = ip_coo_rows + len(users)
+            ip_coo_cols = ip_coo_cols + len(users)
+            uip_coo_data = np.concatenate([bi_coo_data, ip_coo_data])
+            uip_coo_rows = np.concatenate([bi_coo_rows, ip_coo_rows])
+            uip_coo_cols = np.concatenate([bi_coo_cols, ip_coo_cols])
+
+            adj_uip_matrix = sparse.coo_matrix(
+                (uip_coo_data, (uip_coo_rows, uip_coo_cols)),
+                shape=[adj_bi_size + len(props), adj_bi_size + len(props)], dtype=np.float32
+            )
+
+            # Make the matrices symmetric
+            if symmetric_adjacency:
+                adj_uip_matrix = symmetrize_matrix(adj_uip_matrix)
+
+            # Convert to dense matrices, if specified
+            if not sparse_adjacency:
+                adj_uip_matrix = adj_uip_matrix.todense()
+            return adj_uip_matrix
 
     raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
 
@@ -165,7 +188,7 @@ def load_train_test_ratings(
         return (train_ratings, test_ratings), (users, items)
 
     # Load the properties, if specified
-    if type_adjacency == 'unary-kg' and props_filepath is not None:
+    if (type_adjacency in ['unary-kg', 'unary-uip']) and props_filepath is not None:
         props_triples = pd.read_csv(props_filepath, sep=sep, header=None).to_numpy()
         items_indexes = np.argwhere(props_triples[:, [0]] == items)[:, 1]
         props, props_indexes = np.unique(props_triples[:, 1], return_inverse=True)
