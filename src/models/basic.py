@@ -4,7 +4,7 @@ from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
-from models.kgnn import KGCN
+from models.kgnn import KGCN, TwoStepGCN, TwoStepGAT, TwoStepGraphSage, TwoStepLightGCN, TwoStepDGCF
 
 
 class BasicRS(models.Model):
@@ -125,3 +125,52 @@ class BasicDGCF(BasicGNN):
         """
         super().__init__(**kwargs)
         self.gnn = DGCF(*args, **kwargs)
+
+
+class BasicTSGNN(BasicGNN):
+    pass
+
+
+class BasicTSGCN(BasicTSGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
+        """
+        super().__init__(**kwargs)
+        self.gnn = TwoStepGCN(*args, **kwargs)
+
+
+class BasicTSGAT(BasicTSGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
+        """
+        super().__init__(**kwargs)
+        self.gnn = TwoStepGAT(*args, **kwargs)
+
+
+class BasicTSGraphSage(BasicTSGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize a Basic recommender system based on TwoStep Graph Convolutional Networks (KGCNs).
+        """
+        super().__init__(**kwargs)
+        self.gnn = TwoStepGraphSage(*args, **kwargs)
+
+
+class BasicTSLightGCN(BasicTSGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize a Basic recommender system based on TwoStep LightGCN.
+        """
+        super().__init__(**kwargs)
+        self.gnn = TwoStepLightGCN(*args, **kwargs)
+
+
+class BasicTSDGCF(BasicTSGNN):
+    def __init__(self, *args, **kwargs):
+        """
+        Initialize a Basic recommender system based on TwoStep DGCF.
+        """
+        super().__init__(**kwargs)
+        self.gnn = TwoStepDGCF(*args, **kwargs)
