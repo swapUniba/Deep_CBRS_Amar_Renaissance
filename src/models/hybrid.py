@@ -1,8 +1,9 @@
 import abc
 import tensorflow as tf
 
-from tensorflow.keras import models, layers, regularizers
+from tensorflow.keras import models
 
+from layers.fusion import FusionLayer
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
 
@@ -17,8 +18,7 @@ class HybridCBRS(models.Model):
             dense_units=((512, 256, 128), (512, 256, 128), (64, 64)),
             clf_units=(64, 64),
             activation='relu',
-            batch_norm=False,
-            l2_regularizer=None,
+            fusion_method='concatenate',
             **kwargs
     ):
         """
@@ -29,43 +29,30 @@ class HybridCBRS(models.Model):
         :param dense_units: Dense networks units for the Hybrid recommender system (for each branch).
         :param clf_units: Classifier network units for the Hybrid recommender system.
         :param activation: The activation function to use.
-        :param batch_norm: Whether to use batch normalization before the first concatenation.
-        :param l2_regularizer: The L2 regularization factor to use.
+        :param fusion_method: The method for fusion. It can be either 'concatenate' or 'attention'.
         :param **kwargs: Additional args not used.
         """
         super().__init__()
-
-        # Instantiate the regularizer
-        if l2_regularizer is not None:
-            regularizer = regularizers.l2(l2_regularizer)
-        else:
-            regularizer = None
-
-        # Set up the layers parameters
-        layer_kwargs = {
-            'activation': activation,
-            'kernel_regularizer': regularizer,
-            'bias_regularizer': regularizer
-        }
-
-        # Instantiate batch normalization layers
-        if batch_norm:
-            self.bn1a = layers.BatchNormalization()
-            self.bn1b = layers.BatchNormalization()
-            self.bn2a = layers.BatchNormalization()
-            self.bn2b = layers.BatchNormalization()
-        else:
-            self.bn1a = self.bn1b = self.bn2a = self.bn2b = None
-
         self.feature_based = feature_based
-        self.concat = layers.Concatenate()
-        self.dense1a = build_dense_network(dense_units[0], **layer_kwargs)
-        self.dense1b = build_dense_network(dense_units[0], **layer_kwargs)
-        self.dense2a = build_dense_network(dense_units[1], **layer_kwargs)
-        self.dense2b = build_dense_network(dense_units[1], **layer_kwargs)
-        self.dense3a = build_dense_network(dense_units[2], **layer_kwargs)
-        self.dense3b = build_dense_network(dense_units[2], **layer_kwargs)
-        self.clf = build_dense_classifier(clf_units, n_classes=1, **layer_kwargs)
+
+        # Instantiate the fusion layers
+        if feature_based:
+            self.fus1a = FusionLayer('concatenate')
+            self.fus1b = FusionLayer('concatenate')
+            self.fus2a = FusionLayer(fusion_method)
+        else:
+            self.fus1a = FusionLayer(fusion_method)
+            self.fus1b = FusionLayer(fusion_method)
+            self.fus2a = FusionLayer('concatenate')
+
+        # Instantiate dense layers
+        self.dense1a = build_dense_network(dense_units[0], activation=activation)
+        self.dense1b = build_dense_network(dense_units[0], activation=activation)
+        self.dense2a = build_dense_network(dense_units[1], activation=activation)
+        self.dense2b = build_dense_network(dense_units[1], activation=activation)
+        self.dense3a = build_dense_network(dense_units[2], activation=activation)
+        self.dense3b = build_dense_network(dense_units[2], activation=activation)
+        self.clf = build_dense_classifier(clf_units, n_classes=1, activation=activation)
 
     def call(self, inputs, **kwargs):
         ug, ig, ub, ib = inputs
@@ -74,19 +61,13 @@ class HybridCBRS(models.Model):
         ub = self.dense2a(ub)
         ib = self.dense2b(ib)
 
-        if self.bn1a is not None:
-            ug = self.bn1a(ug)
-            ig = self.bn1b(ig)
-            ub = self.bn2a(ub)
-            ib = self.bn2b(ib)
-
         if self.feature_based:
-            x1 = self.dense3a(self.concat([ug, ig]))
-            x2 = self.dense3b(self.concat([ub, ib]))
+            x1 = self.dense3a(self.fus1a([ug, ig]))
+            x2 = self.dense3b(self.fus1b([ub, ib]))
         else:
-            x1 = self.dense3a(self.concat([ug, ub]))
-            x2 = self.dense3b(self.concat([ig, ib]))
-        return self.clf(self.concat([x1, x2]))
+            x1 = self.dense3a(self.fus1a([ug, ub]))
+            x2 = self.dense3b(self.fus1b([ig, ib]))
+        return self.clf(self.fus2a([x1, x2]))
 
 
 class HybridBertGNN(abc.ABC, models.Model):
@@ -96,8 +77,7 @@ class HybridBertGNN(abc.ABC, models.Model):
             clf_units=(16, 16),
             feature_based=False,
             activation='relu',
-            batch_norm=False,
-            l2_regularizer=None,
+            fusion_method='concatenate',
             **kwargs
     ):
         """
@@ -107,8 +87,7 @@ class HybridBertGNN(abc.ABC, models.Model):
         :param dense_units: Dense networks units for the Basic recommender system.
         :param clf_units: Classifier network units for the Basic recommender system.
         :param activation: The activation function to use.
-        :param batch_norm: Whether to use batch normalization before the first concatenation.
-        :param l2_regularizer: The L2 regularization factor to use.
+        :param fusion_method: The method for fusion. It can be either 'concatenate' or 'attention'.
         :param **kwargs: Additional args not used.
         """
         super().__init__()
@@ -119,8 +98,7 @@ class HybridBertGNN(abc.ABC, models.Model):
             dense_units=dense_units,
             clf_units=clf_units,
             activation=activation,
-            batch_norm=batch_norm,
-            l2_regularizer=l2_regularizer
+            fusion_method=fusion_method
         )
 
     def call(self, inputs, **kwargs):

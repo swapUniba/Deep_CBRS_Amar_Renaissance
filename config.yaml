@@ -22,7 +22,7 @@ model:
   activation: 'relu'
   # HybridCBRS
   feature_based: True
-  batch_norm: False
+  fusion_method: 'concatenate'
 
 dataset:
   load_function_name: load_graph_embeddings

@@ -1,13 +1,37 @@
 grid:
   grid1:
     model:
-      name: [hybrid.HybridBertGCN]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertLightGCN, hybrid.HybridBertGAT]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[24, 24], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [8]
+      n_layers: [2]
+      fusion_method: ['concatenate', 'attention']
+      feature_based: [True]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid2:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertLightGCN, hybrid.HybridBertGAT]
+      l2_regularizer: [1e-4]
       dense_units:  [[[48, 48], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
       embedding_dim: [16]
       n_layers: [2]
-      activation: ['leaky_relu']
-      batch_norm: [True]
+      fusion_method: ['concatenate', 'attention']
+      feature_based: [True]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+  grid3:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertLightGCN, hybrid.HybridBertGAT]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[96, 96], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_layers: [2]
+      fusion_method: ['concatenate', 'attention']
+      feature_based: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]

@@ -27,7 +27,7 @@ import mlflow
 PARAMS_PATH = 'config.yaml'
 EXPERIMENTS_PATH = 'experiments.yaml'
 MLFLOW_PATH = './mlruns'
-MLFLOW_EXP_NAME = 'SIS - Movielens-1M - HybridCBRS with GNNs w/ BatchNorm-LeakyReLU'
+MLFLOW_EXP_NAME = 'SIS - Movielens-1M - HybridCBRS with GNNs w/ Attention'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
