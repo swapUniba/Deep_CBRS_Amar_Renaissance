@@ -6,7 +6,7 @@ from time import strftime
 from utilities.utils import \
     get_experiment_logger, nested_dict_update, make_grid, mlflow_linearize, setup_mlflow
 from utilities.keras import get_total_parameters, LogCallback
-from models.basic import BasicRS, BasicGNN, BasicKGCN, BasicTSGNN, BasicTWGNN
+from models.basic import BasicRS, BasicGNN, BasicKnowledgeGCN, BasicTSGNN, BasicTWGNN
 from models.hybrid import HybridCBRS, HybridBertGNN
 from utilities.metrics import top_k_predictions, top_k_metrics
 from utilities import losses
@@ -130,7 +130,7 @@ class Experimenter:
         self.logger.info('Building model...')
 
         # Additional parameter for GNNs
-        if issubclass(self.config.model_class, BasicKGCN) or \
+        if issubclass(self.config.model_class, BasicKnowledgeGCN) or \
                 issubclass(self.config.model_class, BasicTSGNN) or \
                 issubclass(self.config.model_class, BasicTWGNN):
             self.model = self.config.model_class(
@@ -287,7 +287,9 @@ class MultiExperimenter:
         """
         Runs all the experiments
         """
-        for exp_name in self.experiments:
+        n_exp = len(self.experiments)
+        for i, exp_name in enumerate(self.experiments):
+            print("Experiment {}/{}".format(i+1, n_exp))
             self.run_experiment(exp_name)
 
 
