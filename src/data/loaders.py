@@ -28,8 +28,11 @@ def load_train_test_ratings(
     :param sep: The separator to use for CSV or TSV files.
     :param return_adjacency: Whether to also return the adjacency matrix.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
-                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
+        'unary' for 1-only ratings,
+        'binary' for 0/1-only ratings and
+        'unary-kg' if you need both the unary matrix and the KG unary graph.
+            In the latter case it requires props and props_triples.
+        'unary-uip' if you need the whole user-item-properties matrix
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
@@ -262,8 +265,11 @@ def load_user_item_graph(
                                    return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
-                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
+        'unary' for 1-only ratings,
+        'binary' for 0/1-only ratings and
+        'unary-kg' if you need both the unary matrix and the KG unary graph.
+            In the latter case it requires props and props_triples.
+        'unary-uip' if you need the whole user-item-properties matrix
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param user_properties: Whether to calculate the user-properties matrix.
@@ -281,7 +287,7 @@ def load_user_item_graph(
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
                                 symmetric_adjacency=symmetric_adjacency)
-    if user_properties:
+    if user_properties and type_adjacency != 'unary-uip':
         ui_adj, ip_adj = adj_matrix
         user_properties_adj = get_user_properties(ui_adj, ip_adj, len(users), len(items))
         adj_matrix = (ui_adj, ip_adj, user_properties_adj)
