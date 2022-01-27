@@ -3,118 +3,9 @@ import json
 import pandas as pd
 import numpy as np
 
-from scipy import sparse
-
-from utilities.math import symmetrize_matrix
 from data.datasets import UserItemEmbeddings, HybridUserItemEmbeddings
 from data.datasets import UserItemGraph, UserItemGraphEmbeddings, UserItemGraphPosNegSample
-from utilities.preprocess import get_user_properties
-
-
-def build_adjacency_matrix(
-        bi_ratings,
-        users,
-        items,
-        props_triples=None,
-        props=None,
-        type_adjacency='unary',
-        sparse_adjacency=True,
-        symmetric_adjacency=True
-):
-    """
-    :param bi_ratings: The bipartite ratings as a matrix associating to users and items a 0-1 rating.
-    :param users: A sequence of users IDs.
-    :param items: A sequence of items IDs.
-    :param props_triples: The knowledge graph triples of items and properties. It can be None.
-    :param props: A sequence of properties IDs. It can be None.
-    :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
-                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
-    :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
-    :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
-    :return: The adjacency matrix.
-    """
-    # Unary adjacency matrix (only positive ratings)
-    if type_adjacency == 'unary':
-        # Compute the dimensions of the adjacency matrix
-        adj_size = len(users) + len(items)
-
-        # Instantiate the sparse adjacency matrix
-        pos_idx = bi_ratings[:, 2] == 1
-        adj_matrix = sparse.coo_matrix(
-            (bi_ratings[pos_idx, 2], (bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1])),
-            shape=[adj_size, adj_size], dtype=np.float32
-        )
-
-        # Make the matrix symmetric
-        if symmetric_adjacency:
-            adj_matrix = symmetrize_matrix(adj_matrix)
-
-        # Convert to dense matrix, if specified
-        if not sparse_adjacency:
-            adj_matrix = adj_matrix.todense()
-        return adj_matrix
-
-    # Binary adjacency matrix (both positive and negative ratings)
-    if type_adjacency == 'binary':
-        # Compute the dimensions of the adjacency matrix
-        adj_size = len(users) + len(items)
-
-        # Set the data of the matrix
-        coo_data = bi_ratings[:, 2]
-        coo_rows, coo_cols = bi_ratings[:, 0], bi_ratings[:, 1]
-
-        # Instantiate the sparse adjacency matrix
-        adj_matrix = sparse.coo_matrix(
-            (coo_data, (coo_rows, coo_cols)),
-            shape=[adj_size, adj_size], dtype=np.float32
-        )
-
-        # Make the matrix symmetric
-        if symmetric_adjacency:
-            adj_matrix = symmetrize_matrix(adj_matrix)
-
-        # Convert to dense matrix, if specified
-        if not sparse_adjacency:
-            adj_matrix = adj_matrix.todense()
-        return adj_matrix
-
-    # Unary KG adjacency matrices (return both unary adjacency matrix and KG adjacency matrix)
-    if type_adjacency == 'unary-kg':
-        if props is None or props_triples is None:
-            raise ValueError("KG adjacency matrix requires properties info")
-
-        # Compute the dimensions of the adjacency matrices
-        adj_bi_size = len(users) + len(items)
-        adj_kg_size = len(items) + len(props)
-
-        # Instantiate the sparse adjacency matrices
-        pos_idx = bi_ratings[:, 2] == 1
-        coo_data = bi_ratings[pos_idx, 2]
-        coo_rows, coo_cols = bi_ratings[pos_idx, 0], bi_ratings[pos_idx, 1]
-        adj_bi_matrix = sparse.coo_matrix(
-            (coo_data, (coo_rows, coo_cols)),
-            shape=[adj_bi_size, adj_bi_size], dtype=np.float32
-        )
-        coo_data = props_triples[:, 2]
-        coo_rows, coo_cols = props_triples[:, 0], props_triples[:, 1]
-        adj_kg_matrix = sparse.coo_matrix(
-            (coo_data, (coo_rows, coo_cols)),
-            shape=[adj_kg_size, adj_kg_size], dtype=np.float32
-        )
-
-        # Make the matrices symmetric
-        if symmetric_adjacency:
-            adj_bi_matrix = symmetrize_matrix(adj_bi_matrix)
-            adj_kg_matrix = symmetrize_matrix(adj_kg_matrix)
-
-        # Convert to dense matrices, if specified
-        if not sparse_adjacency:
-            adj_bi_matrix = adj_bi_matrix.todense()
-            adj_kg_matrix = adj_kg_matrix.todense()
-        return adj_bi_matrix, adj_kg_matrix
-
-    raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
+from data.preprocess import get_user_properties, build_adjacency_matrix
 
 
 def load_train_test_ratings(
@@ -137,8 +28,11 @@ def load_train_test_ratings(
     :param sep: The separator to use for CSV or TSV files.
     :param return_adjacency: Whether to also return the adjacency matrix.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
-                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
+        'unary' for 1-only ratings,
+        'binary' for 0/1-only ratings and
+        'unary-kg' if you need both the unary matrix and the KG unary graph.
+            In the latter case it requires props and props_triples.
+        'unary-uip' if you need the whole user-item-properties matrix
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :return: The training and test ratings as an array of User-Item-Rating where IDs are made sequential.
@@ -165,7 +59,7 @@ def load_train_test_ratings(
         return (train_ratings, test_ratings), (users, items)
 
     # Load the properties, if specified
-    if type_adjacency == 'unary-kg' and props_filepath is not None:
+    if (type_adjacency in ['unary-kg', 'unary-uip']) and props_filepath is not None:
         props_triples = pd.read_csv(props_filepath, sep=sep, header=None).to_numpy()
         items_indexes = np.argwhere(props_triples[:, [0]] == items)[:, 1]
         props, props_indexes = np.unique(props_triples[:, 1], return_inverse=True)
@@ -371,8 +265,11 @@ def load_user_item_graph(
                                    return_adjacency is True.
     :param sep: The separator to use for CSV or TSV files.
     :param type_adjacency: Used only if return_adjacency is True and sparse_adjacency is True. It can be either
-                           'unary' for 1-only ratings, 'binary' for 0/1-only ratings and 'unary-kg' if you need both the
-                           unary matrix and the KG unary graph. In the latter case it requires props and props_triples.
+        'unary' for 1-only ratings,
+        'binary' for 0/1-only ratings and
+        'unary-kg' if you need both the unary matrix and the KG unary graph.
+            In the latter case it requires props and props_triples.
+        'unary-uip' if you need the whole user-item-properties matrix
     :param sparse_adjacency: Whether to return the adjacency matrix as a sparse matrix instead of dense.
     :param symmetric_adjacency: Whether to return a symmetric adjacency matrix.
     :param user_properties: Whether to calculate the user-properties matrix.
@@ -390,7 +287,7 @@ def load_user_item_graph(
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
                                 symmetric_adjacency=symmetric_adjacency)
-    if user_properties:
+    if user_properties and type_adjacency != 'unary-uip':
         ui_adj, ip_adj = adj_matrix
         user_properties_adj = get_user_properties(ui_adj, ip_adj, len(users), len(items))
         adj_matrix = (ui_adj, ip_adj, user_properties_adj)
@@ -466,8 +363,8 @@ def load_user_item_graph_bert_embeddings(
         symmetric_adjacency=True,
         shuffle=True,
         train_batch_size=1024,
-        test_batch_size=2048
-):
+        test_batch_size=2048,
+        user_properties=None):
     """
     Load train and test ratings for GNN-based models.
     Note that the user and item IDs are converted to sequential numbers.
@@ -498,6 +395,10 @@ def load_user_item_graph_bert_embeddings(
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
                                 symmetric_adjacency=symmetric_adjacency)
+    if user_properties and type_adjacency != 'unary-uip':
+        ui_adj, ip_adj = adj_matrix
+        user_properties_adj = get_user_properties(ui_adj, ip_adj, len(users), len(items))
+        adj_matrix = (ui_adj, ip_adj, user_properties_adj)
 
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
