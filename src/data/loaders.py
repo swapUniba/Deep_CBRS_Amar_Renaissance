@@ -363,8 +363,8 @@ def load_user_item_graph_bert_embeddings(
         symmetric_adjacency=True,
         shuffle=True,
         train_batch_size=1024,
-        test_batch_size=2048
-):
+        test_batch_size=2048,
+        user_properties=None):
     """
     Load train and test ratings for GNN-based models.
     Note that the user and item IDs are converted to sequential numbers.
@@ -395,6 +395,10 @@ def load_user_item_graph_bert_embeddings(
                                 type_adjacency=type_adjacency,
                                 sparse_adjacency=sparse_adjacency,
                                 symmetric_adjacency=symmetric_adjacency)
+    if user_properties and type_adjacency != 'unary-uip':
+        ui_adj, ip_adj = adj_matrix
+        user_properties_adj = get_user_properties(ui_adj, ip_adj, len(users), len(items))
+        adj_matrix = (ui_adj, ip_adj, user_properties_adj)
 
     bert_embeddings = load_bert_user_item_embeddings(bert_user_filepath, bert_item_filepath, users, items)
 
