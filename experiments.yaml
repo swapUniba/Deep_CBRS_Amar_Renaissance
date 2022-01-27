@@ -52,7 +52,7 @@ grid:
       n_layers: [2]
       feature_based: [True]
       fusion_method: ['attention']
-      residual: [False]
+      residual: [False, True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
   grid5:
@@ -66,7 +66,7 @@ grid:
       n_layers: [2]
       feature_based: [True]
       fusion_method: ['attention']
-      residual: [False]
+      residual: [False, True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
   grid6:
@@ -80,6 +80,6 @@ grid:
       n_layers: [2]
       feature_based: [True]
       fusion_method: ['attention']
-      residual: [False]
+      residual: [False, True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
