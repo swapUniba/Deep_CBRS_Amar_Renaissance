@@ -6,6 +6,15 @@ from utilities.math import symmetrize_matrix
 
 
 def get_user_properties(ui_adj, ip_adj, n_users, n_items):
+    """
+    Builds user-properties matrix from user-item and item-properties
+
+    :param ui_adj: user-item sparse matrix
+    :param ip_adj: item-properties sparse matrix
+    :param n_users: number of users
+    :param n_items: nummber of items
+    :return: sparse user-properties matrix
+    """
     n_properties = ip_adj.shape[0] - n_items
 
     ui_rows, ui_cols = ui_adj.row, ui_adj.col
