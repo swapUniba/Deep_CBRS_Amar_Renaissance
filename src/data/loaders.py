@@ -83,17 +83,37 @@ def load_train_test_ratings(
 
 
 def json_load_graph_embeddings(filepath):
+    """
+    Load pre-computed graph embeddings from a JSON file.
+
+    :param filepath: The file path.
+    :return: The pre-computed graph embeddings as list.
+    """
     with open(filepath) as fp:
         embeddings = json.load(fp)
     return embeddings['ent_embeddings']
 
 
 def json_load_bert_embeddings(filepath):
+    """
+    Load the pre-computed BERT embeddings from a JSON file.
+
+    :param filepath: The file path.
+    :return: The pre-computed BERT embeddings as Pandas dataframe.
+    """
     embeddings = pd.read_json(filepath)
     return embeddings.sort_values(by=['ID_OpenKE'])
 
 
 def load_graph_user_item_embeddings(filepath, users, items):
+    """
+    Load users and items pre-computed graph embeddings from a JSON file.
+
+    :param filepath: The file path.
+    :param users: A list of users IDs.
+    :param items: A list of items IDs.
+    :return: A Numpy array containing both users and items pre-computed graph embeddings.
+    """
     graph_embeddings = np.array(json_load_graph_embeddings(filepath), dtype=np.float32)
     user_embeddings = graph_embeddings[users]
     item_embeddings = graph_embeddings[items]
@@ -101,6 +121,15 @@ def load_graph_user_item_embeddings(filepath, users, items):
 
 
 def load_bert_user_item_embeddings(user_filepath, item_filepath, users, items):
+    """
+    Load users and items pre-computed BERT embeddings from JSON files.
+
+    :param user_filepath: The file path for users.
+    :param item_filepath: The file path for items.
+    :param users: A list of users IDs.
+    :param items: A list of items IDs.
+    :return: A Numpy array containing both users and items pre-computed graph embeddings.
+    """
     user_embeddings, item_embeddings = dict(), dict()
     df_users = json_load_bert_embeddings(user_filepath)
     df_items = json_load_bert_embeddings(item_filepath)

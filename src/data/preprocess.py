@@ -7,16 +7,17 @@ from utilities.math import symmetrize_matrix
 
 def get_user_properties(ui_adj, ip_adj, n_users, n_items):
     """
-    Builds user-properties matrix from user-item and item-properties
+    Builds user-properties adjacency matrix from user-item and item-properties matrices.
 
-    :param ui_adj: user-item sparse matrix
-    :param ip_adj: item-properties sparse matrix
-    :param n_users: number of users
-    :param n_items: nummber of items
-    :return: sparse user-properties matrix
+    :param ui_adj: The user-item sparse adjacency matrix.
+    :param ip_adj: The item-properties sparse adjacency matrix.
+    :param n_users: The number of users.
+    :param n_items: The number of items.
+    :return: The user-properties sparse adjacency matrix.
     """
     n_properties = ip_adj.shape[0] - n_items
 
+    # Build the user-item-properties adjacency matrix
     ui_rows, ui_cols = ui_adj.row, ui_adj.col
     ip_rows, ip_cols = ip_adj.row, ip_adj.col
     ip_rows = ip_rows + n_users
@@ -28,9 +29,8 @@ def get_user_properties(ui_adj, ip_adj, n_users, n_items):
         (uip_data, (uip_rows, uip_cols)),
         shape=(n_users + n_items + n_properties, n_users + n_items + n_properties)
     )
-    # Get crosshop connections
 
-    # Create the user-properties matrix
+    # Create the user-properties adjacency matrix
     uip_adj = uip_adj.dot(uip_adj)
     uip_adj.data = np.ones(len(uip_adj.data))
     uip_adj = uip_adj.todense()

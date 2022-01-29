@@ -1,7 +1,4 @@
-import random
 import itertools as it
-import collections
-import time
 
 import numpy as np
 from tensorflow.keras import utils
@@ -228,7 +225,7 @@ class UserItemGraphPosNegSample(utils.Sequence):
             sample_size=10
     ):
         """
-        Initialize a sequence of Graph User-Item IDs.
+        Initialize a sequence of Graph User-Item IDs, which also samples negative instances.
 
         :param ratings: A numpy array of triples (UserID, ItemID, Rating).
         :param users: The original users identifiers.
@@ -236,7 +233,7 @@ class UserItemGraphPosNegSample(utils.Sequence):
         :param adj_matrix: The adjacency matrix.
         :param batch_size: The batch size.
         :param seed: The seed value used to shuffle the sequence.
-        :param sample_size: sample size of items for each user.
+        :param sample_size: The negative sample size of items for each user.
         """
         super().__init__()
         self.ratings = ratings
@@ -277,13 +274,20 @@ class UserItemGraphPosNegSample(utils.Sequence):
             (pos_dict[user], sample_negatives(user, pos_dict[user]))
                                for user in self.contig_users]
 
+    def __len__(self):
+        """
+        Get the number of batches.
+
+        :return: The number of batches.
+        """
+        return int(np.ceil(len(self.ratings) / self.batch_size))
+
     def __getitem__(self, idx):
         """
-        Get a sampled pair of positive and negative items for a batch of users
+        Get a sampled pair of positive and negative items for a batch of users.
 
         :param idx: The index of the batch.
-        :return: A pair consisting of User-Item IDs and the ratings.
-
+        :return: A pair consisting of User-Item IDs and the ratings, with also negative triples.
         """
         batch_users = self.random_state.choice(self.contig_users, size=self.batch_size // 2)
 
@@ -300,14 +304,6 @@ class UserItemGraphPosNegSample(utils.Sequence):
         ratings = np.concatenate([np.full(self.batch_size // 2, 1), np.full(self.batch_size // 2, 0)])
 
         return (users, items), ratings
-
-    def __len__(self):
-        """
-        Get the number of batches.
-
-        :return: The number of batches.
-        """
-        return int(np.ceil(len(self.ratings) / self.batch_size))
 
 
 class UserItemGraphEmbeddings(utils.Sequence):
