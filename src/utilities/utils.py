@@ -101,6 +101,11 @@ class FlushFileHandler(FileHandler):
 
 def setup_mlflow(exp_name, mlflow_path):
     """
+    Setup a MLflow experiments suite.
+
+    :param exp_name: The experiment suite's name.
+    :param mlflow_path: The path where to store all experiments results.
+    :return: The eperiment path with respect to the experiment suite's name.
     """
     mlflow.tensorflow.autolog()
     os.makedirs(mlflow_path, exist_ok=True)
@@ -126,7 +131,8 @@ def setup_mlflow(exp_name, mlflow_path):
 
 def mlflow_linearize(dictionary):
     """
-    Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording
+    Linearize a nested dictionary concatenating keys in order to allow mlflow parameters recording.
+
     :param dictionary: nested dict
     :return: one level dict
     """
