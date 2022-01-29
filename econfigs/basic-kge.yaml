@@ -14,7 +14,7 @@ grid:
       clf_units: [[64, 64]]
     dataset:
       load_function_name: [load_graph_embeddings]
-      graph_filepath: [embeddings/user-item-properties/768TransD.json, embeddings/user-item/768DistMult.json]
+      graph_filepath: [embeddings/user-item-properties/768TransD.json, embeddings/user-item-properties/768DistMult.json]
   grid3:
     model:
       name: [basic.BasicRS]
