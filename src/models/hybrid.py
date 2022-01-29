@@ -161,8 +161,6 @@ class HybridBertTWGNN(HybridBertGNN):
 HYBRID_GNNS = [
     (HybridBertGNN, [GCN, GAT, GraphSage, LightGCN, DGCF],
      None),
-    (HybridBertGNN, [KGCN],
-     None),
     (HybridBertTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
      lambda name: 'HybridBertTS' + name[7:]),
     (HybridBertTWGNN, [TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF],

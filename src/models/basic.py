@@ -4,7 +4,6 @@ from tensorflow.keras import models, layers
 
 from models.dense import build_dense_network, build_dense_classifier
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
-from models.kgnn import KGCN
 from models.tsgnn import TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF
 from models.twgnn import TwoWayGCN, TwoWayGraphSage, TwoWayGAT, TwoWayLightGCN, TwoWayDGCF
 
@@ -99,8 +98,6 @@ def BasicGNNFactory(name, Parent, GNN):
 
 BASIC_GNNS = [
     (BasicGNN, [GCN, GAT, GraphSage, LightGCN, DGCF],
-     None),
-    (BasicKnowledgeGCN, [KGCN],
      None),
     (BasicTSGNN, [TwoStepGCN, TwoStepGraphSage, TwoStepGAT, TwoStepLightGCN, TwoStepDGCF],
      lambda name: 'BasicTS' + name[7:]),
