@@ -168,7 +168,7 @@ HYBRID_GNNS = [
 ]
 
 
-def generate_basics():
+def generate_hybrids():
     for parent, gnns, name_getter in HYBRID_GNNS:
         for gnn in gnns:
             if name_getter is not None:
@@ -179,4 +179,4 @@ def generate_basics():
 
 
 # Generate gnns when module is loaded
-generate_basics()
+generate_hybrids()
