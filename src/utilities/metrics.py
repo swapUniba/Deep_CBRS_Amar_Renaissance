@@ -35,6 +35,15 @@ def top_k_predictions(predictions, users, items, k=5):
 
 
 def top_k_metrics(test_filepath, predictions_path):
+    """
+    Compute the Top-K metrics, i.e. Precision, Recall and F1 score @K.
+    The results are saved in a TSV file called "results.tsv" in the same directory of the predicted scores file.
+    Note that the metrics are computed by a legacy utility written in Java, called "mimir.jar", which can be found
+    in the "binaries" directory.
+
+    :param test_filepath: The test ratings file path.
+    :param predictions_path: The predicted scores file path.
+    """
     try:
         if not os.path.isdir(predictions_path):
             raise RuntimeError("Invalid predictions path specified. Unable to run evaluator.")
