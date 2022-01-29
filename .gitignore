@@ -3,7 +3,6 @@
 
 venv
 __pycache__
-exp
 mlruns
 
 datasets/*
