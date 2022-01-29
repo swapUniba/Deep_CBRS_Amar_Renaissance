@@ -23,6 +23,7 @@ import os
 import io
 import mlflow
 import traceback
+import argparse
 
 
 PARAMS_PATH = 'config.yaml'
@@ -32,7 +33,15 @@ MLFLOW_EXP_NAME = 'SIS - Movielens-1M - BasicRS with Knowledge GNNs'
 LOG_FREQUENCY = 100
 METRICS_TOP_KS = [5, 10]
 os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-EXP_PATH = setup_mlflow(MLFLOW_EXP_NAME, MLFLOW_PATH)
+
+parser = argparse.ArgumentParser()
+
+parser.add_argument("-c", "--config", dest='config', type=str,
+                    help="Config input file", default=PARAMS_PATH)
+parser.add_argument("-e", "--experiments", dest='experiments', type=str,
+                    help="Experiment (grid search) file", default=EXPERIMENTS_PATH)
+parser.add_argument("--exp_name", dest='exp_name', type=str,
+                    help="Name of the group of runs (used in mlflow)", default=MLFLOW_EXP_NAME)
 
 
 class Experimenter:
@@ -67,7 +76,8 @@ class Experimenter:
         mlflow.start_run(run_name=self.exp_name)
         mlflow.log_params(mlflow_linearize(config))
 
-        self.config.dest = path_join(EXP_PATH, mlflow.active_run().info.run_id, 'artifacts')
+        exp_path = config.pop('exp_path')
+        self.config.dest = path_join(exp_path, mlflow.active_run().info.run_id, 'artifacts')
         self.predictions_dest = path_join(self.config.dest, "predictions")
         os.makedirs(self.config.dest, exist_ok=True)
         os.makedirs(self.predictions_dest, exist_ok=True)
@@ -235,15 +245,22 @@ class MultiExperimenter:
     Runs multiple experiments by reading an experiment file and overriding parameters from a base config
     """
 
-    def __init__(self):
+    def __init__(self, params_path, experiments_path, exp_path):
+        """
+        :param params_path: Path of the YAML base config file
+        :param experiments_path: Path of the YAML experiments file, in which are specified the parameters that changes
+        :param exp_path: Path where the set of experiments will be stored
+            in every run w.r.t. the base config
+        """
+        self.exp_path = exp_path
         # Loads the base config
-        with open(PARAMS_PATH, 'r') as params_file:
+        with open(params_path, 'r') as params_file:
             yaml = YAML()
             config_str = params_file.read()
             self.base_config = yaml.load(config_str)
 
         # Loads the experiments file
-        with open(EXPERIMENTS_PATH, 'r') as params_file:
+        with open(experiments_path, 'r') as params_file:
             yaml = YAML()
             config_str = params_file.read()
             config = yaml.load(config_str)
@@ -276,6 +293,7 @@ class MultiExperimenter:
               '-----------------------------------------------\n'
               )
         try:
+            config['exp_path'] = exp_path
             exp = Experimenter(config)
             exp.run()
         except Exception as e:
@@ -294,5 +312,7 @@ class MultiExperimenter:
 
 
 if __name__ == "__main__":
-    exps = MultiExperimenter()
+    args = parser.parse_args()
+    exp_path = setup_mlflow(args.exp_name, MLFLOW_PATH)
+    exps = MultiExperimenter(args.config, args.experiments, exp_path)
     exps.run()
