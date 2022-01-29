@@ -7,7 +7,7 @@ exp
 mlruns
 
 datasets/*
-!datasets/.keep
+!datasets/README.md
 
 embeddings/*
-!embeddings/.keep
+!embeddings/README.md
