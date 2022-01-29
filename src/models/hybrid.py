@@ -6,7 +6,6 @@ from tensorflow.keras import models, layers
 from layers.fusion import FusionLayer
 from models.dense import build_dense_network, build_dense_classifier, build_residual_dense_network
 from models.gnn import GCN, GAT, GraphSage, LightGCN, DGCF
-from models.kgnn import KGCN
 from models.tsgnn import TwoStepGraphSage, TwoStepGAT, TwoStepDGCF, TwoStepGCN, TwoStepLightGCN
 from models.twgnn import TwoWayDGCF, TwoWayGAT, TwoWayLightGCN, TwoWayGraphSage, TwoWayGCN
 
