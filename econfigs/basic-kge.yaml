@@ -1,0 +1,26 @@
+grid:
+  grid1:
+    model:
+      name: [basic.BasicRS]
+      dense_units:  [[512, 256, 128]]
+      clf_units: [[64, 64]]
+    dataset:
+      load_function_name: [load_graph_embeddings]
+      graph_filepath: [embeddings/user-item/768TransD.json, embeddings/user-item/768DistMult.json]
+  grid2:
+    model:
+      name: [basic.BasicRS]
+      dense_units:  [[512, 256, 128]]
+      clf_units: [[64, 64]]
+    dataset:
+      load_function_name: [load_graph_embeddings]
+      graph_filepath: [embeddings/user-item-properties/768TransD.json, embeddings/user-item/768DistMult.json]
+  grid3:
+    model:
+      name: [basic.BasicRS]
+      dense_units:  [[512, 256, 128]]
+      clf_units: [[64, 64]]
+    dataset:
+      load_function_name: [load_bert_embeddings]
+      bert_user_filepath: [embeddings/bert/user-lastlayer.json]
+      bert_item_filepath: [embeddings/bert/item-lastlayer.json]
