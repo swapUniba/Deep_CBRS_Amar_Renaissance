@@ -1,0 +1,85 @@
+grid:
+  grid1:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[24, 24]]
+      clf_units: [[48, 48]]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8]]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+  grid2:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[48, 48]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16]]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+  grid3:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[96, 48]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32]]
+      n_layers: [2]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+  grid4:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[32, 32]]
+      clf_units: [[64, 64]]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8, 8]]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+  grid5:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[64, 64]]
+      clf_units: [[64, 64]]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16, 16]]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
+  grid6:
+    model:
+      name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
+      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      dense_units:  [[128, 64]]
+      clf_units: [[64, 64]]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32, 32]]
+      n_layers: [3]
+    dataset:
+      load_function_name: [load_user_item_graph]
+      type_adjacency: [ unary-uip ]
+      user_properties: [ True ]
+      props_triples_filepath: [datasets/movielens/props2id.tsv]
