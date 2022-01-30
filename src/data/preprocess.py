@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from scipy import sparse
 
@@ -167,3 +168,31 @@ def build_adjacency_matrix(
             return adj_uip_matrix
 
     raise ValueError("Unknown adjacency matrix type named {}".format(type_adjacency))
+
+
+def process_item_properties_graph(ratings_filepath, graph_filepath, kg_filepath, sep='\t'):
+    """
+    Prpocess the item properties graph.
+
+    :param ratings_filepath: The training ratings filepath.
+    :param graph_filepath: The graph containing both training ratings and KG interactions filepath.
+    :param kg_filepath: The output filepath, that will contain only the pre-processed KG interactions.
+    :param sep: A separator of CSV files.
+    """
+    # Load the ratings array, and the occurring items
+    ratings = pd.read_csv(ratings_filepath, sep=sep, header=None).to_numpy()
+    items = np.unique(ratings[:, 1])
+
+    # Load the graph array
+    graph = pd.read_csv(graph_filepath, sep=sep, header=None, skiprows=1).to_numpy()
+
+    # Split the train graph interactions
+    n_ratings = len(ratings)
+    kg = graph[n_ratings:]
+
+    # Get the mask of KG interactions having an item appearing in the train ratings
+    mask = np.any(kg[:, [0]] == items, axis=1)
+
+    # Write the output KG interactions only to file
+    df = pd.DataFrame(data=kg[mask]).sort_values([0, 1])
+    df.to_csv(kg_filepath, sep=sep, header=False, index=False)
