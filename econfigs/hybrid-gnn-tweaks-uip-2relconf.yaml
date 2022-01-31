@@ -50,7 +50,7 @@ grid:
   grid4:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      l2_regularizer: [1e-4]
       dense_units:  [[[24, 24], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
       feature_based: [True]
