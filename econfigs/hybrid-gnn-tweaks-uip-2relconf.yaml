@@ -2,6 +2,54 @@ grid:
   grid1:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[24, 24], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      feature_based: [True]
+      embedding_dim: [8]
+      n_hiddens: [[8, 8]]
+      n_layers: [2]
+      fusion_method: ['attention']
+      residual: [False]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
+  grid2:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[48, 48], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      feature_based: [True]
+      embedding_dim: [16]
+      n_hiddens: [[16, 16]]
+      n_layers: [2]
+      fusion_method: ['attention']
+      residual: [False]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
+  grid3:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
+      l2_regularizer: [1e-4]
+      dense_units:  [[[96, 96], [256, 64], [64, 64]]]
+      clf_units: [[64, 64]]
+      feature_based: [True]
+      embedding_dim: [32]
+      n_hiddens: [[32, 32]]
+      n_layers: [2]
+      fusion_method: 'attention'
+      residual: [False]
+    dataset:
+      load_function_name: [load_user_item_graph_bert_embeddings]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
+  grid4:
+    model:
+      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
       l2_regularizer: [1e-5, 1e-4, 1e-3]
       dense_units:  [[[24, 24], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
@@ -9,77 +57,41 @@ grid:
       embedding_dim: [8]
       n_hiddens: [[8, 8]]
       n_layers: [2]
+      fusion_method: ['concatenate']
+      residual: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
-  grid2:
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
+  grid5:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      l2_regularizer: [1e-4]
       dense_units:  [[[48, 48], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
       feature_based: [True]
       embedding_dim: [16]
       n_hiddens: [[16, 16]]
       n_layers: [2]
+      fusion_method: ['concatenate']
+      residual: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
-  grid3:
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
+  grid6:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
+      l2_regularizer: [1e-4]
       dense_units:  [[[96, 96], [256, 64], [64, 64]]]
       clf_units: [[64, 64]]
       feature_based: [True]
       embedding_dim: [32]
       n_hiddens: [[32, 32]]
       n_layers: [2]
+      fusion_method: ['concatenate']
+      residual: [True]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
-  grid4:
-    model:
-      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[[32, 32], [256, 64], [64, 64]]]
-      clf_units: [[64, 64]]
-      feature_based: [True]
-      embedding_dim: [8]
-      n_hiddens: [[8, 8, 8]]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph_bert_embeddings]
-      type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
-  grid5:
-    model:
-      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[[64, 64], [256, 64], [64, 64]]]
-      clf_units: [[64, 64]]
-      feature_based: [True]
-      embedding_dim: [16]
-      n_hiddens: [[16, 16, 16]]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph_bert_embeddings]
-      type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
-  grid6:
-    model:
-      name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
-      l2_regularizer: [1e-5, 1e-4, 1e-3]
-      dense_units:  [[[128, 128], [256, 64], [64, 64]]]
-      clf_units: [[64, 64]]
-      feature_based: [True]
-      embedding_dim: [32]
-      n_hiddens: [[32, 32, 32]]
-      n_layers: [3]
-    dataset:
-      load_function_name: [load_user_item_graph_bert_embeddings]
-      type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]

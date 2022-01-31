@@ -10,9 +10,8 @@ grid:
       n_layers: [2]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid2:
     model:
       name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
@@ -24,9 +23,8 @@ grid:
       n_layers: [2]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid3:
     model:
       name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
@@ -38,9 +36,8 @@ grid:
       n_layers: [2]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid4:
     model:
       name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
@@ -52,9 +49,8 @@ grid:
       n_layers: [3]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid5:
     model:
       name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
@@ -66,9 +62,8 @@ grid:
       n_layers: [3]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid6:
     model:
       name: [basic.BasicGCN, basic.BasicGraphSage, basic.BasicGAT, basic.BasicLightGCN, basic.BasicDGCF]
@@ -80,6 +75,5 @@ grid:
       n_layers: [3]
     dataset:
       load_function_name: [load_user_item_graph]
-      type_adjacency: [ unary-uip ]
-      user_properties: [ True ]
-      props_triples_filepath: [datasets/movielens/props2id.tsv]
+      type_adjacency: [unary-uip]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]

@@ -12,7 +12,7 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid2:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
@@ -26,7 +26,7 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid3:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
@@ -40,7 +40,7 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid4:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
@@ -54,7 +54,7 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid5:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
@@ -68,7 +68,7 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
   grid6:
     model:
       name: [hybrid.HybridBertGCN, hybrid.HybridBertGraphSage, hybrid.HybridBertGAT, hybrid.HybridBertLightGCN, hybrid.HybridBertDGCF]
@@ -82,4 +82,4 @@ grid:
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
       type_adjacency: [unary-uip]
-      props_triples_filepath: [datasets/movielens/props2id-1relconf.tsv]
+      props_triples_filepath: [datasets/movielens/props2id-2relconf.tsv]
