@@ -41,7 +41,7 @@ grid:
       embedding_dim: [32]
       n_hiddens: [[32, 32]]
       n_layers: [2]
-      fusion_method: 'attention'
+      fusion_method: ['attention']
       residual: [False]
     dataset:
       load_function_name: [load_user_item_graph_bert_embeddings]
