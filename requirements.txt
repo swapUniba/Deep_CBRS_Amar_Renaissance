@@ -4,4 +4,5 @@ pandas
 tensorflow
 ruamel.yaml
 easydict
+mlflow
 spektral
