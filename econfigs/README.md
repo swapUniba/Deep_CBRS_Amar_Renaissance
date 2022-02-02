@@ -1,6 +1,6 @@
 # Experiments Configuration Files
 
-In this directory there are four examples of experiments configuration files:
+In this directory there are several examples of experiments configuration files:
 - ```basic-kge```: Basic architecture with user-item and user-item-properties graph embeddings, and with BERT
 embeddings.
 - ```hybrid-kge```: Hybrid architectures (both entity-based and feature-based) with user-item and
