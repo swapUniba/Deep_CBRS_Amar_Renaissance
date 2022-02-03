@@ -1,7 +1,6 @@
 ## Datasets Directory
 
 Note that all the data and preprocessed datasets can be downloaded using DVC [^1].
-Please refer to the README.md in the root directory for details.
 
 ### Movielens-1M
 
@@ -10,6 +9,10 @@ Additionally, relationships between movies and some of their properties are also
 Note that, there are two relation types settings for the relationships between movies and properties:
 1. subject, director, starring, writer, language, editing, narrator;
 2.  subject, director, starring, writer,  language, editing, cinematography, musicComposer, country, producer, basedOn.
+
+The dataset can be downloaded as:
+
+    dvc pull datasets/movielens
 
 #### Directory Structure
 

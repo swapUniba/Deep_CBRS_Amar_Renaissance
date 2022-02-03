@@ -4,6 +4,3 @@
 venv
 __pycache__
 mlruns
-
-embeddings/*
-!embeddings/README.md
