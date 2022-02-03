@@ -1,4 +1,6 @@
-# Deep_CBRS_Amar_Renaissance
+
+
+# Deep CBRS Amar Renaissance
 
 A fork from [Deep_CBRS_Amar_Revisited](https://github.com/cenzy/Deep_CBRS_Amar_Revisited) which follows the work from [Deep_CBRS_Amar](https://github.com/swapUniba/Deep_CBRS_Amar).
 
@@ -10,11 +12,17 @@ In this project, we experimented and evaluated different Graph Neural Network mo
 For further details, refer to the [documentation](doc.pdf)
 
 ## Install
+This repo requires at least Python 3.8
 
     pip install -r requirements.txt
     
 ## Dataset
-In this work, we used MovieLens-1M, however, if for every dataset you'll need:
+### Get the dataset
+In this work, we used MovieLens-1M, preprocessed files can be obtained with DVC:
+
+    dvc pull dataset
+### Use your own dataset
+However, for every dataset you'll need:
 
  - CSV / TSV of ratings for train and test in the form `(user, item, liked / not liked)`
 
@@ -40,8 +48,24 @@ By default, config.yaml and experiments.yaml will be used for configuration.
 The following parameters can be specified as well:
 - **-c** / **--config**: config input file, manages input parameters of the experiments;
 - **-e** / **--experiments**: grid search experiment file, performs a grid search by overriding specified parameters in it with the ones in the config file;
-- **--exp_name**:  experiment name used in MLFlow that will encapsulate the runs .
+- **--exp_name**:  experiment name used in MLFlow that will encapsulate the runs.
 
 For example, the following command runs a grid search on the _basic_ recommender system architecture with Graph Neural Networks:
 
     python src/experiment.py --exp_name myexp -e econfigs/basic-gnn.yaml
+**NOTE**: you need to pull the dataset to run our experiments [(↑)](#get-the-dataset) and the BERT embeddings for the Hybrid experiments:
+
+    dvc pull embeddings
+
+Refer to the [econfigs readme](./econfigs/README.md) for an explanation for every grid configuration of runs available. 
+## Explore our experiments
+
+If you want to see our results, download them with DVC (around 40 GiB)
+
+    dvc pull mlruns
+    
+ User MLFlow to compare experiments with its UI:
+
+     mlflow ui
+     
+Each run has its artifact folder where you can find the **trained weights**, the top 5/10 **calculated predictions** for the test set, **logs** and **config.yaml** to reproduce that exact run.
