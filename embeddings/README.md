@@ -6,8 +6,8 @@ Note that all the pre-computed embeddings can be downloaded using DVC [^1].
 
 - ```item-lastlayer.json```: items BERT embeddings obtained by summing up the word embeddings of the last layer of BERT;
 - ```user-lastlayer.json```: users BERT embeddings obtained by the liked items BERT embeddings;
-- ```item-lastlayer_nostopw.json```: items BERT embeddings, but without stop-words;
-- ```user-lastlayer_nostopw.json```: users BERT embeddings.
+- ```item-lastlayer_ns.json```: items BERT embeddings, but without stop-words;
+- ```user-lastlayer_ns.json```: users BERT embeddings, but without stop-words.
 
 Note that BERT word embedidngs are obtained using the plot of the movies.
 Movielens-1M BERT embeddings can be downloaded as:
