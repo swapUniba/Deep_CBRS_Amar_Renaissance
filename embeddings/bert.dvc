@@ -1,0 +1,5 @@
+outs:
+- md5: 8b5e9a995602ab7c285f9e0db265ff36.dir
+  size: 191285616
+  nfiles: 4
+  path: bert

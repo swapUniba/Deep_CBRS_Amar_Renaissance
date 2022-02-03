@@ -1,0 +1,5 @@
+outs:
+- md5: b7514b5e36c8fae20bca1c00be289c37.dir
+  size: 5537148031
+  nfiles: 15
+  path: user-item-properties
