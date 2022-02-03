@@ -1,6 +1,7 @@
-## Datasets directory.
+## Datasets Directory
 
 Note that all the data and preprocessed datasets can be downloaded using DVC [^1].
+Please refer to the README.md in the root directory for details.
 
 ### Movielens-1M
 
