@@ -10,7 +10,7 @@ Note that, there are two relation types settings for the relationships between m
 1. subject, director, starring, writer, language, editing, narrator;
 2.  subject, director, starring, writer,  language, editing, cinematography, musicComposer, country, producer, basedOn.
 
-#### Directories Structure
+#### Directory Structure
 
 - ```train2id.tsv```: the training data composed of binary ratings between users and movies IDs
 (0:negative and 1:positive).
