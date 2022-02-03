@@ -1,4 +1,5 @@
 
+
 # Deep CBRS Amar Renaissance
 
 A fork from [Deep_CBRS_Amar_Revisited](https://github.com/cenzy/Deep_CBRS_Amar_Revisited) which follows the work from [Deep_CBRS_Amar](https://github.com/swapUniba/Deep_CBRS_Amar).
@@ -52,13 +53,19 @@ The following parameters can be specified as well:
 For example, the following command runs a grid search on the _basic_ recommender system architecture with Graph Neural Networks:
 
     python src/experiment.py --exp_name myexp -e econfigs/basic-gnn.yaml
+**NOTE**: you need to pull the dataset to run our experiments [(↑)](#get-the-dataset) and the BERT embeddings for the Hybrid experiments:
 
+    dvc pull embeddings
+
+Refer to the [econfigs readme](./econfigs/README.md) for an explanation for every grid configuration of runs available. 
 ## Explore our experiments
 
 If you want to see our results, download them with DVC (around 40 GiB)
 
     dvc pull mlruns
+    
  User MLFlow to compare experiments with its UI:
 
      mlflow ui
+     
 Each run has its artifact folder where you can find the **trained weights**, the top 5/10 **calculated predictions** for the test set, **logs** and **config.yaml** to reproduce that exact run.
