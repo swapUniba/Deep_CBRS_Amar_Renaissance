@@ -19,7 +19,7 @@ Movielens-1M BERT embeddings can be downloaded as:
 - ```user-item/```: directory containing graph embeddings for both users and items;
 - ```user-item-properties/```: directory containing graph embeddings for users, items and properties.
 
-Each graph embedding file is named as "{_D_}{_M_}.json", where _D_ denots the size of the embeddings (e.g. 768), and
+Each graph embedding file is named as "{_D_}{_M_}.json", where _D_ denotes the size of the embeddings (e.g. 768), and
 _M_ denotes the Knowledge Graph Embeedings (KGE) model used (e.g. TransD).
 Note that graph embeddings are obtained by relying on the user-item (or user-item-properties) graph.
 Movielens-1M graph embeddings can be downloaded as:
