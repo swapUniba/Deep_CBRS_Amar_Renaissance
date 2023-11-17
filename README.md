@@ -35,10 +35,6 @@ For knowledge-aware architectures:
 
  - Triples CSV / TSV in the form `(item, entity, relation)`
 
-For knowledge-aware architectures:
-
- - Triples CSV / TSV in the form `(item, entity, relation)`
-
 ## Usage
 Run an experiment with `experiment.py`.
 By default, config.yaml and experiments.yaml will be used for configuration.
