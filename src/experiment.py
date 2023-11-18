@@ -82,7 +82,7 @@ class Experimenter:
         os.makedirs(self.config.dest, exist_ok=True)
         os.makedirs(self.predictions_dest, exist_ok=True)
 
-        # Save the config in the experiment folder (R E P R O D U C I B I L I T Y)
+        # Save the config in the experiment folder (REPRODUCIBILITY)
         with open(path_join(self.config.dest, "config.yaml"), 'w') as config_output:
             YAML().dump(config, config_output)
 
